@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #070b14;
+  color: #e8eefb;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(900px 500px at 15% -10%, rgba(255, 176, 32, 0.10), transparent 60%),
+    radial-gradient(800px 500px at 92% 0%, rgba(34, 211, 167, 0.08), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* ------------------------------------------------------------ components */
+.card {
+  @apply rounded-2xl border border-edge bg-panel/80 backdrop-blur-sm;
+}
+
+.card-pad {
+  @apply rounded-2xl border border-edge bg-panel/80 p-5 backdrop-blur-sm;
+}
+
+.label {
+  @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted;
+}
+
+.input {
+  @apply w-full rounded-xl border border-edge bg-panel2 px-3.5 py-2.5 text-sm text-white
+         placeholder:text-muted/60 outline-none transition
+         focus:border-amber/60 focus:ring-2 focus:ring-amber/20;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm
+         font-semibold transition active:scale-[.98] disabled:cursor-not-allowed
+         disabled:opacity-40;
+}
+
+.btn-primary {
+  @apply btn bg-amber text-ink hover:bg-amber/90;
+}
+
+.btn-sos {
+  @apply btn bg-sos text-white hover:bg-sos/90;
+}
+
+.btn-ghost {
+  @apply btn border border-edge bg-panel2 text-white hover:border-amber/50;
+}
+
+.btn-safe {
+  @apply btn bg-safe text-ink hover:bg-safe/90;
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-edge bg-panel2
+         px-2.5 py-1 text-xs text-muted;
+}
+
+.stat {
+  @apply rounded-xl border border-edge bg-panel2/70 p-3;
+}
+
+/* ------------------------------------------------------------ leaflet skin */
+.leaflet-container {
+  background: #0a1020;
+  font-family: inherit;
+  border-radius: 1rem;
+}
+
+/* OSM tiles are bright. Tone them down so they read as a night map. */
+.leaflet-tile-pane {
+  filter: invert(1) hue-rotate(190deg) brightness(0.92) contrast(0.92) saturate(0.7);
+}
+
+.leaflet-control-attribution {
+  background: rgba(10, 16, 32, 0.8) !important;
+  color: #8497b8 !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #ffb020 !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #141d30;
+  color: #e8eefb;
+  border: 1px solid #1e2a42;
+}
+
+.marker-pin {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.65);
+}
+
+.sos-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #ff3b4e;
+  animation: sosPulse 2s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+@keyframes sosPulse {
+  0% { transform: scale(0.7); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0a1020; }
+::-webkit-scrollbar-thumb { background: #1e2a42; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #2b3a58; }
