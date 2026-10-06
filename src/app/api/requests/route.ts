@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { listRequests, saveRequest, usingSupabase } from "@/lib/db";
+import { listRequests, saveRequest, storage } from "@/lib/db";
 import { guardianToken, otp, requestId } from "@/lib/ids";
 import { planParts, quotePrice, rankMechanics } from "@/lib/matching";
 import { enrich } from "@/lib/realdata";
-import { triageWithLLM } from "@/lib/triage";
+import { reverseGeocode } from "@/lib/realdata/nominatim";
+import { currentWeather } from "@/lib/realdata/openmeteo";
+import { nearbyPlaces } from "@/lib/realdata/overpass";
+import { runTriageAgent } from "@/lib/agent/graph";
 import type {
   AssistanceRequest, CreateRequestInput, RequestStatus,
 } from "@/lib/types";
@@ -17,7 +20,7 @@ export async function GET(req: Request) {
     ? (status.split(",") as RequestStatus[])
     : undefined;
   const rows = await listRequests(statuses);
-  return NextResponse.json({ requests: rows, storage: usingSupabase ? "supabase" : "memory" });
+  return NextResponse.json({ requests: rows, storage });
 }
 
 export async function POST(req: Request) {
@@ -41,12 +44,21 @@ export async function POST(req: Request) {
   const location = { lat: body.lat, lng: body.lng };
   const vehicleType = body.vehicleType ?? "car";
 
+  // Warm the real-data caches while the agent thinks, so step 5 does not add
+  // its own wait on top of the agent's. Never throws; results are cached.
+  void Promise.allSettled([reverseGeocode(location), currentWeather(location), nearbyPlaces(location)]);
+
   // 1. Work out what is probably wrong.
-  const triage = await triageWithLLM(
-    body.symptomText ?? "",
-    vehicleType,
-    body.vehicleModel ?? "unknown"
-  );
+  //    LangGraph + RAG agent; falls back to the deterministic knowledge base.
+  //    It only advises: dispatch and price below stay deterministic.
+  const triage = await runTriageAgent({
+    symptomText: body.symptomText ?? "",
+    vehicleType: body.vehicleType,
+    vehicleModel: body.vehicleModel ?? "unknown",
+    hasChildren: Boolean(body.hasChildren),
+    location,
+    clarification: body.clarification ?? null,
+  });
 
   // 2. Find who can actually fix it, fastest.
   const ranked = rankMechanics(location, triage, vehicleType);

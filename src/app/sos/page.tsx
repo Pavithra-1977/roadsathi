@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
 import { DemoPartnerChip, SeverityBadge } from "@/components/ui";
+import WhyDiagnosis from "@/components/WhyDiagnosis";
 import { partName } from "@/lib/knowledgeBase";
 import type { TriageResult, VehicleType } from "@/lib/types";
 
@@ -52,6 +53,9 @@ export default function SosPage() {
   const [triage, setTriage] = useState<TriageResult | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [analysing, setAnalysing] = useState(false);
+  const [clarification, setClarification] = useState<{ question: string; answer: string } | null>(null);
+  const [answerDraft, setAnswerDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,7 +82,9 @@ export default function SosPage() {
 
   useEffect(() => { locate(); }, [locate]);
 
-  // Live triage while the driver is still typing.
+  // Live triage while the driver is still typing. Instant and deterministic;
+  // the LangGraph agent runs only on "Analyse with AI" and on SOS submit.
+  useEffect(() => setClarification(null), [symptomText]);
   useEffect(() => {
     if (symptomText.trim().length < 4) {
       setTriage(null);
@@ -120,6 +126,33 @@ export default function SosPage() {
     return list;
   }, [pos, candidates]);
 
+  async function analyse(answer?: string) {
+    if (symptomText.trim().length < 4) return;
+    const clar = answer && triage?.clarifyingQuestion ? { question: triage.clarifyingQuestion, answer } : clarification;
+    setAnalysing(true);
+    try {
+      const res = await fetch("/api/triage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          symptomText, vehicleType, vehicleModel, hasChildren,
+          lat: pos?.lat, lng: pos?.lng, agent: true, clarification: clar,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTriage(data.triage);
+        setCandidates(data.candidates ?? []);
+        setClarification(clar ?? null);
+        setAnswerDraft("");
+      }
+    } catch {
+      /* analysis is optional; the SOS still works */
+    } finally {
+      setAnalysing(false);
+    }
+  }
+
   async function submit() {
     setError(null);
     if (!pos) return setError("We still need your location before we can send help.");
@@ -136,6 +169,7 @@ export default function SosPage() {
           lat: pos.lat, lng: pos.lng,
           vehicleType, vehicleModel, vehiclePlate, symptomText,
           guardianPhone: guardianPhone || null,
+          clarification,
         }),
       });
       const data = await res.json();
@@ -311,7 +345,7 @@ export default function SosPage() {
             <div className="card-pad animate-rise">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted">
-                  Live triage · {triage.source === "llm" ? "LLM refined" : "knowledge base"}
+                  Live triage · {triage.agent?.source === "llm+rag" ? "AI (LLM + RAG)" : "knowledge base"}
                 </div>
                 <SeverityBadge severity={triage.severity} />
               </div>
@@ -397,6 +431,45 @@ export default function SosPage() {
               Start describing the problem and triage will appear here instantly.
             </div>
           )}
+
+          {triage && (
+            <div className="card-pad border-blue-400/30">
+              {triage.needsClarification && triage.clarifyingQuestion ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); if (answerDraft.trim()) analyse(answerDraft.trim()); }}
+                  className="space-y-2"
+                >
+                  <div className="text-[10px] uppercase tracking-wider text-blue-300">One quick question</div>
+                  <p className="text-sm font-semibold">{triage.clarifyingQuestion}</p>
+                  <input
+                    className="input"
+                    value={answerDraft}
+                    onChange={(e) => setAnswerDraft(e.target.value)}
+                    placeholder="Type your answer (English, Hindi or Hinglish)"
+                  />
+                  <button type="submit" disabled={analysing || !answerDraft.trim()} className="btn-ghost w-full">
+                    {analysing ? "Analysing…" : "Answer and re-check"}
+                  </button>
+                  <p className="text-[11px] text-muted">Optional. You can send the SOS right now without answering.</p>
+                </form>
+              ) : (
+                <button onClick={() => analyse()} disabled={analysing} className="btn-ghost w-full">
+                  {analysing
+                    ? "Analysing with AI (up to 8 s)…"
+                    : triage.agent?.source === "llm+rag"
+                      ? "🧠 Re-analyse with AI"
+                      : "🧠 Analyse with AI (LangGraph + RAG)"}
+                </button>
+              )}
+              {clarification && (
+                <p className="mt-2 text-[11px] text-muted">
+                  Your answer will be sent with the SOS: &quot;{clarification.answer}&quot;
+                </p>
+              )}
+            </div>
+          )}
+
+          {triage && <WhyDiagnosis triage={triage} />}
 
           {candidates.length > 0 && (
             <div className="card-pad">

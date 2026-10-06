@@ -32,7 +32,7 @@ family as the thing being rescued and the vehicle as second priority.
 
 | | |
 |---|---|
-| 🧠 **Triage before dispatch** | A 19-fault knowledge base scores the driver's own words — including Hinglish terms people actually type — and predicts the fault, severity, whether it is roadside-fixable, and exactly which tools and parts the mechanic must bring. Optional LLM refinement when `ANTHROPIC_API_KEY` is set. |
+| 🧠 **Triage before dispatch** | An 18-fault knowledge base scores the driver's own words — including Hinglish terms people actually type — and predicts the fault, severity, whether it is roadside-fixable, and exactly which tools and parts the mechanic must bring. With `HUGGINGFACE_API_KEY` set, a LangGraph + RAG agent refines it and cites the guides it used. |
 | 🧰 **Parts routing, not guesswork** | Shops publish live inventory. A greedy set-cover router computes the pickup sequence that adds the least detour, preferring shops that are actually open. An alternator stops being a two-hour round trip. |
 | 🛡️ **Guardian Link** | One tap produces a tokenised public page showing the mechanic's name, verification status, plate number and live ETA. Family at home watch without installing anything. |
 | 🔢 **Arrival code handshake** | Work cannot begin until the customer reads out a 4-digit code. It proves the person walking up in the dark is the one we dispatched, and timestamps arrival for billing. |
@@ -53,7 +53,7 @@ npm run dev
 Open <http://localhost:3000>.
 
 **Zero configuration required.** With no environment variables the app runs in
-in-memory demo mode and every feature works. Supabase is optional and only adds
+in-memory demo mode and every feature works. Upstash Redis is optional and only adds
 cross-device persistence.
 
 ---
@@ -78,32 +78,53 @@ Then at <https://vercel.com/new>:
 That is it. No environment variables are required for the demo to work.
 Every future `git push` redeploys automatically.
 
-### Optional: real persistence with Supabase
+### Optional: persistence with Upstash Redis
 
 In-memory mode resets when a Vercel serverless function goes cold, so a request raised
-on your phone may not be visible on your laptop. For a multi-device demo:
+on your phone may not be visible on your laptop. For a multi-device demo, create a free
+database at <https://upstash.com> and add both variables in Vercel:
 
-1. Create a free project at <https://supabase.com>.
-2. Open **SQL Editor**, paste all of [`supabase/schema.sql`](supabase/schema.sql), hit **Run**.
-3. In **Project Settings → API**, copy the Project URL and the keys.
-4. In Vercel → **Settings → Environment Variables**, add:
+```
+UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=...
+```
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-   SUPABASE_SERVICE_ROLE_KEY=eyJ...
-   ```
+`src/lib/db.ts` switches over automatically (plain `fetch` to the REST API, JSON values,
+24 h TTL). `GET /api/requests` reports `storage: "memory" | "redis"`.
 
-5. Redeploy.
+### Optional: AI triage (LangGraph + RAG + Hugging Face)
 
-The storage adapter in `src/lib/db.ts` switches over automatically — no code changes.
-`GET /api/requests` reports which backend is live in its `storage` field.
+```
+HUGGINGFACE_API_KEY=hf_...                     # server-side only
+HF_MODEL=openai/gpt-oss-20b:groq               # chat model on the HF router
+HF_EMBED_MODEL=intfloat/multilingual-e5-small  # must match data/index.json
+```
 
-### Optional: LLM-refined triage
+`src/lib/agent/graph.ts` is a LangGraph `StateGraph`:
 
-Add `ANTHROPIC_API_KEY` and `src/lib/triage.ts` will call Claude to refine the
-classification, falling back to the deterministic knowledge base on any error or after
-an 8 second timeout. **A demo must never hang because a third-party API is slow.**
+```
+intake -> retrieve -> classify -> validate -> safety -+-> clarify ---+-> plan_b_hint
+                                                      +--------------+-> end
+```
+
+- **intake** normalises Hinglish and typos, detects language and vehicle type.
+- **retrieve** embeds only the query and takes the top 4 chunks from `data/index.json`
+  (40 self-written guides in `data/kb/`); keyword search if embedding fails.
+- **classify** asks the LLM for a Zod-validated fault id (18 faults + "unknown"), citing chunk ids.
+- **validate** compares with the deterministic classifier; on disagreement below 0.7
+  confidence the deterministic answer wins ("low agreement").
+- **safety** adds rule-based steps (night, rain, children, highway shoulder, do-not-repair).
+- **clarify** asks one question when confidence is below 0.55; **plan_b_hint** flags
+  severe or non-roadside faults.
+
+The agent has an 8 s budget with per-node timeouts and falls back to the deterministic
+knowledge base on any error. **It only advises**: skills, parts, dispatch and price come
+from the fixed fault definitions. Rebuild the index after editing a guide:
+
+```bash
+npx tsx scripts/build-index.ts    # embeds the guides once, writes data/index.json
+npx tsx scripts/check-agent.ts    # self-check (add --offline to test the fallback)
+```
 
 ---
 
@@ -124,9 +145,6 @@ Each block on `/track/[id]` carries a Live/Fallback badge, and a "Data sources" 
 lists them. **Mechanics, parts inventory and pricing remain the seeded demo roster**
 ("Demo partner"). Real OSM garages are shown as listings only, never as partners.
 
-Supabase users: re-run `supabase/schema.sql` to add the `realdata` jsonb column. Until
-then requests still save, just without the real-data fields.
-
 ---
 
 ## Architecture
@@ -143,7 +161,7 @@ Customer (phone)                    Mechanic (laptop)              Guardian (any
       │              └─ quotePrice()       │                             │
       ▼                     │              ▼                             ▼
   /track/[id] ◄─────────────┴──────── src/lib/db.ts ────────────────────►┘
-                                    (Supabase ⇄ in-memory)
+                                    (in-memory ⇄ Upstash Redis)
 ```
 
 ```
@@ -161,12 +179,14 @@ src/
 │   ├── MapView.tsx              Raw Leaflet, night-styled OSM tiles
 │   └── ui.tsx                   Badges, pills, stat tiles
 └── lib/
-    ├── knowledgeBase.ts         19 faults, keyword weights, tools, parts
-    ├── triage.ts                Classifier + optional LLM refinement
+    ├── knowledgeBase.ts         18 faults, keyword weights, tools, parts
+    ├── triage.ts                Deterministic keyword classifier
+    ├── agent/graph.ts           LangGraph triage agent (advises only)
+    ├── rag/                     Retriever + HF embeddings over data/index.json
     ├── matching.ts              Dispatch ranking, parts routing, pricing, Plan B
     ├── seed.ts                  Mechanics/shops placed relative to the incident
     ├── geo.ts                   Haversine, road factor, ETA
-    ├── db.ts                    Supabase ⇄ in-memory storage adapter
+    ├── db.ts                    In-memory ⇄ Upstash Redis storage adapter
     └── types.ts                 Shared domain types
 ```
 
@@ -179,7 +199,7 @@ production this function is replaced by a single PostGIS `ST_DWithin` query — 
 interface is identical, so nothing above it changes.
 
 **Storage is an adapter, not a hard dependency.** `src/lib/db.ts` exposes five functions.
-Supabase and the in-memory map implement the same contract. The app has no idea which
+Upstash Redis and the in-memory map implement the same contract. The app has no idea which
 one it is talking to, which is why it deploys green on the first push with no
 configuration.
 

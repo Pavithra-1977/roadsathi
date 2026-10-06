@@ -9,7 +9,7 @@ import type { TriageResult, VehicleType } from "./types";
  * likely fault plus the tools and parts the mechanic must bring.
  *
  * This deterministic path always works - no API key, no network, no cold start.
- * If ANTHROPIC_API_KEY is set, `triageWithLLM` refines the result instead.
+ * The LangGraph agent (lib/agent/graph.ts) builds on it and falls back to it.
  */
 
 function normalise(text: string): string {
@@ -20,13 +20,13 @@ function normalise(text: string): string {
     .trim();
 }
 
-interface Scored {
+export interface Scored {
   fault: FaultDefinition;
   score: number;
   hits: string[];
 }
 
-function scoreFaults(text: string, vehicleType: VehicleType): Scored[] {
+export function scoreFaults(text: string, vehicleType: VehicleType): Scored[] {
   const t = ` ${normalise(text)} `;
   const scored: Scored[] = [];
 
@@ -117,86 +117,4 @@ export function triage(
     reasoning: reasoningParts.join(" "),
     source: "knowledge-base",
   };
-}
-
-/**
- * Optional LLM refinement. Only fires when ANTHROPIC_API_KEY is configured.
- * Falls back to the deterministic result on any error - a demo must never
- * hang because a third-party API is slow.
- */
-export async function triageWithLLM(
-  symptomText: string,
-  vehicleType: VehicleType,
-  vehicleModel: string
-): Promise<TriageResult> {
-  const base = triage(symptomText, vehicleType);
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return base;
-
-  const faultList = FAULTS.map((f) => `${f.id}: ${f.label}`).join("\n");
-
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 400,
-        system:
-          "You are a vehicle breakdown triage assistant for a roadside assistance service in India. " +
-          "Given a driver's description, pick the single most likely fault id from the list. " +
-          "Reply ONLY with minified JSON: {\"faultId\":string,\"confidence\":number,\"reasoning\":string}",
-        messages: [
-          {
-            role: "user",
-            content:
-              `Vehicle: ${vehicleModel} (${vehicleType})\n` +
-              `Driver says: "${symptomText}"\n\n` +
-              `Known fault ids:\n${faultList}`,
-          },
-        ],
-      }),
-    });
-    clearTimeout(timer);
-    if (!res.ok) return base;
-
-    const data = await res.json();
-    const text: string = data?.content?.[0]?.text ?? "";
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return base;
-
-    const parsed = JSON.parse(match[0]) as {
-      faultId: string;
-      confidence: number;
-      reasoning: string;
-    };
-    const f = FAULTS.find((x) => x.id === parsed.faultId);
-    if (!f) return base;
-
-    return {
-      faultId: f.id,
-      faultLabel: f.label,
-      confidence: Math.min(0.99, Math.max(0.3, Number(parsed.confidence) || base.confidence)),
-      severity: f.severity,
-      roadsideFixable: f.roadsideFixable,
-      estimatedFixMinutes: f.fixMinutes,
-      estimatedCostRange: f.costRange,
-      requiredSkills: f.skills,
-      requiredTools: f.tools,
-      requiredParts: f.parts,
-      safetyAdvice: f.safetyAdvice,
-      reasoning: parsed.reasoning || base.reasoning,
-      source: "llm",
-    };
-  } catch {
-    return base;
-  }
 }

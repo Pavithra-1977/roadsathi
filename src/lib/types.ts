@@ -126,6 +126,36 @@ export interface TriageResult {
   safetyAdvice: string[];
   reasoning: string;
   source: "knowledge-base" | "llm";
+
+  // Added by the LangGraph agent (optional: absent on older requests)
+  /** Knowledge-base passages the diagnosis and advice are grounded in */
+  citations?: Citation[];
+  agent?: AgentTrace;
+  /** Confidence too low: ask the driver this one question, then re-run */
+  needsClarification?: boolean;
+  clarifyingQuestion?: string | null;
+  /** High severity or not roadside-fixable: prepare the Plan B flow early */
+  planBRecommended?: boolean;
+}
+
+export interface Citation {
+  docTitle: string;
+  snippet: string;
+  /** Chunk id, e.g. "overheating#0" */
+  chunkId?: string;
+  source?: string;
+}
+
+export interface AgentTrace {
+  /** Graph nodes visited, in order */
+  path: string[];
+  source: "llm+rag" | "deterministic";
+  retrieval?: "embedding" | "keyword";
+  language?: "en" | "hi" | "hinglish";
+  /** e.g. "low agreement", "timeout", "no api key" */
+  flags?: string[];
+  model?: string | null;
+  ms?: number;
 }
 
 export interface PartsPlan {
@@ -219,4 +249,6 @@ export interface CreateRequestInput {
   vehiclePlate: string;
   symptomText: string;
   guardianPhone?: string | null;
+  /** Answer to the agent's clarifying question, sent back with the original text */
+  clarification?: { question: string; answer: string } | null;
 }

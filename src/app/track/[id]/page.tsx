@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
 import { DemoPartnerChip, Rupees, SeverityBadge, SourceBadge, StatusPill } from "@/components/ui";
+import WhyDiagnosis from "@/components/WhyDiagnosis";
 import { partName } from "@/lib/knowledgeBase";
 import type { AssistanceRequest, DataSources, LatLng, OsmPlace } from "@/lib/types";
 
@@ -314,7 +315,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
               <div className="mt-2 text-xl font-extrabold">{req.triage.faultLabel}</div>
               <div className="mt-1 text-xs text-muted">
                 {Math.round(req.triage.confidence * 100)}% confidence ·{" "}
-                {req.triage.source === "llm" ? "LLM refined" : "knowledge base"}
+                {req.triage.agent?.source === "llm+rag" ? "AI (LLM + RAG)" : "knowledge base"}
               </div>
               <p className="mt-3 text-xs leading-relaxed text-muted">&quot;{req.symptomText}&quot;</p>
 
@@ -330,8 +331,17 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                   ))}
                 </ul>
               </div>
+
+              {req.triage.needsClarification && req.triage.clarifyingQuestion && (
+                <p className="mt-4 rounded-xl border border-blue-400/30 bg-blue-400/[0.06] px-3.5 py-2.5 text-xs leading-relaxed">
+                  <span className="font-semibold text-blue-300">The mechanic will likely ask:</span>{" "}
+                  {req.triage.clarifyingQuestion}
+                </p>
+              )}
             </div>
           )}
+
+          {req.triage && <WhyDiagnosis triage={req.triage} />}
 
           {/* price */}
           {typeof req.quotedPriceInr === "number" && (
