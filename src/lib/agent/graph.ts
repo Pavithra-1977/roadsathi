@@ -104,6 +104,7 @@ const LlmOutput = z.object({
   confidence: z.number().describe("0 to 1"),
   reasoning: z.string().describe("One or two sentences. Cite chunk ids in square brackets, e.g. [overheating#0]."),
   citedChunkIds: z.array(z.string()),
+  alternativeFaultIds: z.array(z.enum(FAULT_IDS)).describe("Up to 2 next most likely fault ids, best first"),
   clarifyingQuestion: z.string().describe("One short question that would most improve the diagnosis, or empty string"),
 });
 type LlmOutput = z.infer<typeof LlmOutput>;
@@ -204,25 +205,31 @@ async function classify(s: S): Promise<Partial<S>> {
     );
     return { llm: out, model, path: ["classify"] };
   } catch (e) {
-    const msg = (e as Error).message;
+    const msg = (e as Error).message.split("\n")[0];
     return { llm: null, model, path: ["classify"], flags: [/timed? ?out|abort/i.test(msg) ? "timeout" : `llm error: ${msg.slice(0, 80)}`] };
   }
 }
 
 function validate(s: S): Partial<S> {
   const det = triage(s.normalized, s.vehicleType);
+  const ranked = scoreFaults(s.normalized, s.vehicleType).map((x) => x.fault.id);
+  const alternativesTo = (id: string, ids: string[]) => ids.filter((x) => x !== id).slice(0, 2);
   const llm = s.llm;
   const ids = new Set(s.chunks.map((c) => c.id));
   const cited = llm?.citedChunkIds.filter((id) => ids.has(id)) ?? [];
   const ordered = [...s.chunks].sort((a, b) => Number(cited.includes(b.id)) - Number(cited.includes(a.id)));
   const citations = ordered.map(toCitation);
 
-  if (!llm) return { result: { ...det, citations }, path: ["validate"] };
+  if (!llm) return { result: { ...det, citations, alternatives: alternativesTo(det.faultId, ranked) }, path: ["validate"] };
 
   const confidence = Math.min(0.99, Math.max(0, llm.confidence));
   const agree = llm.faultId === det.faultId;
   if (!agree && confidence < 0.7) {
-    return { result: { ...det, citations }, path: ["validate"], flags: ["low agreement"] };
+    return {
+      result: { ...det, citations, alternatives: alternativesTo(det.faultId, [llm.faultId, ...ranked]) },
+      path: ["validate"],
+      flags: ["low agreement"],
+    };
   }
 
   const f = FAULTS.find((x) => x.id === llm.faultId);
@@ -256,6 +263,7 @@ function validate(s: S): Partial<S> {
       reasoning: llm.reasoning || det.reasoning,
       source: "llm",
       citations,
+      alternatives: alternativesTo(llm.faultId, [...llm.alternativeFaultIds, ...ranked]),
     },
     path: ["validate"],
     flags: agree ? ["agrees with keyword classifier"] : ["llm overrode keyword classifier"],
@@ -371,6 +379,7 @@ function deterministic(input: AgentInput, flags: string[], started: number): Tri
   return {
     ...base,
     citations: keywordSearch(`${vehicleType} ${input.symptomText}`, 4).map(toCitation),
+    alternatives: scoreFaults(input.symptomText, vehicleType).map((x) => x.fault.id).filter((x) => x !== base.faultId).slice(0, 2),
     agent: trace,
     planBRecommended: base.severity === "high" || base.severity === "critical" || !base.roadsideFixable,
   };

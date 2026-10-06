@@ -132,7 +132,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
         <a href="tel:112" className="btn-sos">📞 Emergency 112</a>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         {/* -------------------------------------------------- left */}
         <div className="space-y-5">
           <div>
@@ -170,7 +170,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
               <div className="flex items-center gap-3">
                 <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-amber/15 text-2xl">🔧</span>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="text-lg font-bold">{req.mechanic.name}</span>
                     <DemoPartnerChip />
                     {req.mechanic.verified && (

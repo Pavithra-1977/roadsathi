@@ -191,9 +191,9 @@ export default function SosPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
         {/* ------------------------------------------------------ form */}
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {/* location */}
           <div className="card-pad">
             <div className="flex items-start justify-between gap-3">
@@ -338,7 +338,7 @@ export default function SosPage() {
         </div>
 
         {/* ------------------------------------------------------ live panel */}
-        <div className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+        <div className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:self-start">
           {pos && <Map center={pos} markers={markers} height={300} />}
 
           {triage ? (
@@ -361,8 +361,6 @@ export default function SosPage() {
                   {Math.round(triage.confidence * 100)}%
                 </span>
               </div>
-
-              <p className="mt-3 text-xs leading-relaxed text-muted">{triage.reasoning}</p>
 
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 <div className="stat">

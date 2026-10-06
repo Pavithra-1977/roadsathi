@@ -1,0 +1,848 @@
+{
+  "generatedAt": "2026-10-06T18:34:28.115Z",
+  "testSet": {
+    "size": 60,
+    "description": "Self-written labelled phrases, written independently of the knowledge-base keyword lists. Not a real-world dataset. The knowledge base is not tuned against these phrases.",
+    "byKind": {
+      "en": 41,
+      "hinglish": 10,
+      "typo": 3,
+      "vague": 6
+    },
+    "labels": 19
+  },
+  "deterministic": {
+    "name": "Keyword classifier (raw text)",
+    "accuracy": 33.3,
+    "top3Accuracy": 36.7,
+    "correct": 20,
+    "top3Correct": 22,
+    "byKind": {
+      "en": "9/41",
+      "hinglish": "4/10",
+      "typo": "1/3",
+      "vague": "6/6"
+    },
+    "misses": [
+      {
+        "expected": "tyre_burst",
+        "kind": "en",
+        "text": "heard a huge pop and the car swerved, the rubber is torn to pieces",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "tyre_burst",
+        "kind": "en",
+        "text": "the side of the tyre has ripped open, you can see the threads",
+        "predicted": "flat_tyre",
+        "top3": [
+          "flat_tyre",
+          "tyre_burst"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "battery_dead",
+        "kind": "en",
+        "text": "turned the key and nothing happens, the dashboard is totally black",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "battery_dead",
+        "kind": "hinglish",
+        "text": "gaadi start nahi ho rahi, sirf tik tik ki awaaz aa rahi hai",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "alternator_fail",
+        "kind": "en",
+        "text": "while driving all the lights slowly went dim and then the engine cut out",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "alternator_fail",
+        "kind": "en",
+        "text": "the red battery symbol lit up on the highway and now the radio and wipers stopped",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "alternator_fail",
+        "kind": "typo",
+        "text": "put in a new batery last week but it keeps going flat after an hour of driving",
+        "predicted": "flat_tyre",
+        "top3": [
+          "flat_tyre"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "overheating",
+        "kind": "en",
+        "text": "needle shot up to H and white vapour is coming from under the hood",
+        "predicted": "accident_damage",
+        "top3": [
+          "accident_damage",
+          "overheating"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "overheating",
+        "kind": "en",
+        "text": "stuck in traffic and the engine gauge keeps climbing towards the top",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "fuel_empty",
+        "kind": "en",
+        "text": "ran dry, the needle was on E and I thought I could make it to the next pump",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "fan_belt",
+        "kind": "en",
+        "text": "shrieking noise from the engine bay then the battery and temperature lights came on together",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead",
+          "overheating"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "fan_belt",
+        "kind": "en",
+        "text": "the rubber strip that turns the pulleys is lying on the road behind us",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "brake_failure",
+        "kind": "en",
+        "text": "I press the pedal and it goes all the way to the floor, the car barely slows",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "brake_failure",
+        "kind": "typo",
+        "text": "brek nahi lag rahe, pedal bilkul naram ho gaya",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "brake_failure",
+        "kind": "en",
+        "text": "fluid dripping near the back wheel and stopping is really weak",
+        "predicted": "radiator_leak",
+        "top3": [
+          "radiator_leak",
+          "flat_tyre"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "clutch_failure",
+        "kind": "en",
+        "text": "engine revs but the car won't move forward, smells like something is cooking",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "clutch_failure",
+        "kind": "en",
+        "text": "the left pedal stays stuck down and I can't get it into first",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "clutch_failure",
+        "kind": "hinglish",
+        "text": "gear daalne pe ghar ghar awaaz, gaadi aage nahi badh rahi",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "starter_motor",
+        "kind": "en",
+        "text": "lights and horn work fine but turning the key gives one click and then silence",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "starter_motor",
+        "kind": "en",
+        "text": "when I crank there is a whirr but the engine itself doesn't spin",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "starter_motor",
+        "kind": "hinglish",
+        "text": "self motor kharab lagta hai, battery bilkul theek hai",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "spark_plug",
+        "kind": "en",
+        "text": "the car shudders and loses power when I accelerate, check engine light is flashing",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "spark_plug",
+        "kind": "en",
+        "vehicle": "bike",
+        "text": "bike keeps cutting out and popping, not picking up speed",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "spark_plug",
+        "kind": "en",
+        "text": "engine runs rough at idle like it is missing a beat",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "radiator_leak",
+        "kind": "en",
+        "text": "a pipe near the front of the engine split and liquid is spraying out",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "radiator_leak",
+        "kind": "hinglish",
+        "text": "gaadi ke neeche se hara paani tapak raha hai",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "chain_snap",
+        "kind": "en",
+        "vehicle": "bike",
+        "text": "on my bike the engine revs but the back wheel doesn't turn",
+        "predicted": "flat_tyre",
+        "top3": [
+          "flat_tyre"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "chain_snap",
+        "kind": "en",
+        "vehicle": "bike",
+        "text": "heard a clatter and now something is dragging under the motorcycle",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "electrical_fuse",
+        "kind": "en",
+        "text": "headlamps died suddenly but the engine is still running",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "electrical_fuse",
+        "kind": "en",
+        "text": "smell of melting plastic from under the dashboard and the wipers are dead",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "key_lockout",
+        "kind": "en",
+        "text": "I shut the door and the keys are still hanging in the ignition",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "key_lockout",
+        "kind": "en",
+        "text": "can't find my car key anywhere, we searched the whole rest stop",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "key_lockout",
+        "kind": "hinglish",
+        "text": "chaabi gaadi ke andar reh gayi aur darwaza band ho gaya",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "engine_seize",
+        "kind": "en",
+        "text": "loud metallic banging from the engine and then it froze, won't turn at all",
+        "predicted": "tyre_burst",
+        "top3": [
+          "tyre_burst"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "engine_seize",
+        "kind": "en",
+        "text": "oil warning came on, I kept driving, now there is a horrible hammering sound",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "engine_seize",
+        "kind": "hinglish",
+        "text": "engine se zor zor ki khat khat aur phir band, ab ghoom hi nahi raha",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "suspension",
+        "kind": "en",
+        "text": "hit a deep pit in the road and now the front wheel is leaning inwards",
+        "predicted": "accident_damage",
+        "top3": [
+          "accident_damage",
+          "flat_tyre"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "suspension",
+        "kind": "en",
+        "text": "one corner of the car is sagging after the speed breaker",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 1
+      },
+      {
+        "expected": "accident_damage",
+        "kind": "en",
+        "text": "a truck rear-ended us and the bumper is hanging off",
+        "predicted": "suspension",
+        "top3": [
+          "suspension"
+        ],
+        "ms": 0
+      },
+      {
+        "expected": "accident_damage",
+        "kind": "en",
+        "text": "we skidded into the divider and my father has a cut on his head",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 0
+      }
+    ]
+  },
+  "langgraph": {
+    "name": "LangGraph: intake, RAG, LLM, validate",
+    "llmUsed": false,
+    "model": null,
+    "answeredBy": {
+      "deterministic": 60
+    },
+    "avgMs": 51,
+    "accuracy": 36.7,
+    "top3Accuracy": 41.7,
+    "correct": 22,
+    "top3Correct": 25,
+    "byKind": {
+      "en": "9/41",
+      "hinglish": "5/10",
+      "typo": "2/3",
+      "vague": "6/6"
+    },
+    "misses": [
+      {
+        "expected": "tyre_burst",
+        "kind": "en",
+        "text": "heard a huge pop and the car swerved, the rubber is torn to pieces",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 159
+      },
+      {
+        "expected": "tyre_burst",
+        "kind": "en",
+        "text": "the side of the tyre has ripped open, you can see the threads",
+        "predicted": "flat_tyre",
+        "top3": [
+          "flat_tyre",
+          "tyre_burst"
+        ],
+        "ms": 63
+      },
+      {
+        "expected": "battery_dead",
+        "kind": "en",
+        "text": "turned the key and nothing happens, the dashboard is totally black",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 63
+      },
+      {
+        "expected": "battery_dead",
+        "kind": "hinglish",
+        "text": "gaadi start nahi ho rahi, sirf tik tik ki awaaz aa rahi hai",
+        "predicted": "starter_motor",
+        "top3": [
+          "starter_motor",
+          "battery_dead"
+        ],
+        "ms": 58
+      },
+      {
+        "expected": "alternator_fail",
+        "kind": "en",
+        "text": "while driving all the lights slowly went dim and then the engine cut out",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 56
+      },
+      {
+        "expected": "alternator_fail",
+        "kind": "en",
+        "text": "the red battery symbol lit up on the highway and now the radio and wipers stopped",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 56
+      },
+      {
+        "expected": "alternator_fail",
+        "kind": "typo",
+        "text": "put in a new batery last week but it keeps going flat after an hour of driving",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead",
+          "flat_tyre"
+        ],
+        "ms": 58
+      },
+      {
+        "expected": "overheating",
+        "kind": "en",
+        "text": "needle shot up to H and white vapour is coming from under the hood",
+        "predicted": "accident_damage",
+        "top3": [
+          "accident_damage",
+          "overheating"
+        ],
+        "ms": 53
+      },
+      {
+        "expected": "overheating",
+        "kind": "en",
+        "text": "stuck in traffic and the engine gauge keeps climbing towards the top",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 52
+      },
+      {
+        "expected": "fuel_empty",
+        "kind": "en",
+        "text": "ran dry, the needle was on E and I thought I could make it to the next pump",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 52
+      },
+      {
+        "expected": "fan_belt",
+        "kind": "en",
+        "text": "shrieking noise from the engine bay then the battery and temperature lights came on together",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead",
+          "overheating"
+        ],
+        "ms": 39
+      },
+      {
+        "expected": "fan_belt",
+        "kind": "en",
+        "text": "the rubber strip that turns the pulleys is lying on the road behind us",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 45
+      },
+      {
+        "expected": "brake_failure",
+        "kind": "en",
+        "text": "I press the pedal and it goes all the way to the floor, the car barely slows",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 45
+      },
+      {
+        "expected": "brake_failure",
+        "kind": "en",
+        "text": "fluid dripping near the back wheel and stopping is really weak",
+        "predicted": "radiator_leak",
+        "top3": [
+          "radiator_leak",
+          "flat_tyre"
+        ],
+        "ms": 45
+      },
+      {
+        "expected": "clutch_failure",
+        "kind": "en",
+        "text": "engine revs but the car won't move forward, smells like something is cooking",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 39
+      },
+      {
+        "expected": "clutch_failure",
+        "kind": "en",
+        "text": "the left pedal stays stuck down and I can't get it into first",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 40
+      },
+      {
+        "expected": "clutch_failure",
+        "kind": "hinglish",
+        "text": "gear daalne pe ghar ghar awaaz, gaadi aage nahi badh rahi",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 40
+      },
+      {
+        "expected": "starter_motor",
+        "kind": "en",
+        "text": "lights and horn work fine but turning the key gives one click and then silence",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 38
+      },
+      {
+        "expected": "starter_motor",
+        "kind": "en",
+        "text": "when I crank there is a whirr but the engine itself doesn't spin",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 41
+      },
+      {
+        "expected": "starter_motor",
+        "kind": "hinglish",
+        "text": "self motor kharab lagta hai, battery bilkul theek hai",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 41
+      },
+      {
+        "expected": "spark_plug",
+        "kind": "en",
+        "text": "the car shudders and loses power when I accelerate, check engine light is flashing",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 43
+      },
+      {
+        "expected": "spark_plug",
+        "kind": "en",
+        "vehicle": "bike",
+        "text": "bike keeps cutting out and popping, not picking up speed",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 43
+      },
+      {
+        "expected": "spark_plug",
+        "kind": "en",
+        "text": "engine runs rough at idle like it is missing a beat",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 40
+      },
+      {
+        "expected": "radiator_leak",
+        "kind": "en",
+        "text": "a pipe near the front of the engine split and liquid is spraying out",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 40
+      },
+      {
+        "expected": "chain_snap",
+        "kind": "en",
+        "vehicle": "bike",
+        "text": "on my bike the engine revs but the back wheel doesn't turn",
+        "predicted": "flat_tyre",
+        "top3": [
+          "flat_tyre"
+        ],
+        "ms": 42
+      },
+      {
+        "expected": "chain_snap",
+        "kind": "en",
+        "vehicle": "bike",
+        "text": "heard a clatter and now something is dragging under the motorcycle",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 44
+      },
+      {
+        "expected": "electrical_fuse",
+        "kind": "en",
+        "text": "headlamps died suddenly but the engine is still running",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 44
+      },
+      {
+        "expected": "electrical_fuse",
+        "kind": "en",
+        "text": "smell of melting plastic from under the dashboard and the wipers are dead",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 34
+      },
+      {
+        "expected": "key_lockout",
+        "kind": "en",
+        "text": "I shut the door and the keys are still hanging in the ignition",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 35
+      },
+      {
+        "expected": "key_lockout",
+        "kind": "en",
+        "text": "can't find my car key anywhere, we searched the whole rest stop",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 35
+      },
+      {
+        "expected": "key_lockout",
+        "kind": "hinglish",
+        "text": "chaabi gaadi ke andar reh gayi aur darwaza band ho gaya",
+        "predicted": "battery_dead",
+        "top3": [
+          "battery_dead"
+        ],
+        "ms": 35
+      },
+      {
+        "expected": "engine_seize",
+        "kind": "en",
+        "text": "loud metallic banging from the engine and then it froze, won't turn at all",
+        "predicted": "tyre_burst",
+        "top3": [
+          "tyre_burst"
+        ],
+        "ms": 36
+      },
+      {
+        "expected": "engine_seize",
+        "kind": "en",
+        "text": "oil warning came on, I kept driving, now there is a horrible hammering sound",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 37
+      },
+      {
+        "expected": "engine_seize",
+        "kind": "hinglish",
+        "text": "engine se zor zor ki khat khat aur phir band, ab ghoom hi nahi raha",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 37
+      },
+      {
+        "expected": "suspension",
+        "kind": "en",
+        "text": "hit a deep pit in the road and now the front wheel is leaning inwards",
+        "predicted": "accident_damage",
+        "top3": [
+          "accident_damage",
+          "flat_tyre"
+        ],
+        "ms": 36
+      },
+      {
+        "expected": "suspension",
+        "kind": "en",
+        "text": "one corner of the car is sagging after the speed breaker",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 36
+      },
+      {
+        "expected": "accident_damage",
+        "kind": "en",
+        "text": "a truck rear-ended us and the bumper is hanging off",
+        "predicted": "suspension",
+        "top3": [
+          "suspension"
+        ],
+        "ms": 36
+      },
+      {
+        "expected": "accident_damage",
+        "kind": "en",
+        "text": "we skidded into the divider and my father has a cut on his head",
+        "predicted": "unknown",
+        "top3": [
+          "unknown"
+        ],
+        "ms": 37
+      }
+    ]
+  }
+}

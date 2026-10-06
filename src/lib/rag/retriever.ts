@@ -46,9 +46,14 @@ export const KB_SOURCE = "RoadSathi guide (self-written)";
 const index = rawIndex as unknown as KbIndex;
 
 export function toCitation(c: RetrievedChunk): Citation {
+  // Flatten markdown lists ("- item", "1. item") into one readable line.
+  const flat = c.text
+    .replace(/(^|\n)\s*(?:[-*]|\d+\.)\s+/g, "$1• ")
+    .replace(/\s*\n+\s*/g, " ")
+    .trim();
   return {
     docTitle: c.title,
-    snippet: c.text.length > 220 ? `${c.text.slice(0, 217).trimEnd()}...` : c.text,
+    snippet: flat.length > 220 ? `${flat.slice(0, 217).trimEnd()}...` : flat,
     chunkId: c.id,
     source: KB_SOURCE,
   };

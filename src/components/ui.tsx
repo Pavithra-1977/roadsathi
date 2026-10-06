@@ -71,7 +71,7 @@ export function DemoPartnerChip() {
   return (
     <span
       title="Seeded demo roster - not a real business"
-      className="chip border-purple-400/40 bg-purple-400/10 py-0.5 text-[10px] text-purple-200"
+      className="chip whitespace-nowrap border-purple-400/40 bg-purple-400/10 py-0.5 text-[10px] text-purple-200"
     >
       Demo partner
     </span>

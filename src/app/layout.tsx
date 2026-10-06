@@ -41,6 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/how" className="hidden rounded-lg px-3 py-2 text-muted transition hover:text-white sm:block">
                 How it works
               </Link>
+              <Link href="/evidence" className="hidden rounded-lg px-3 py-2 text-muted transition hover:text-white sm:block">
+                Evidence
+              </Link>
               <Link href="/sos" className="btn-sos px-3.5 py-2">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />

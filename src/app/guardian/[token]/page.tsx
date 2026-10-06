@@ -112,7 +112,7 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
           <div className="mt-3 flex items-center gap-3">
             <span className="grid h-12 w-12 place-items-center rounded-full bg-amber/15 text-xl">🔧</span>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-bold">{v.mechanic.name}</span>
                 <DemoPartnerChip />
                 {v.mechanic.verified && (

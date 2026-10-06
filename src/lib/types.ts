@@ -136,6 +136,8 @@ export interface TriageResult {
   clarifyingQuestion?: string | null;
   /** High severity or not roadside-fixable: prepare the Plan B flow early */
   planBRecommended?: boolean;
+  /** Next most likely fault ids, best first (for the mechanic to rule out) */
+  alternatives?: string[];
 }
 
 export interface Citation {

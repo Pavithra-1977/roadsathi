@@ -9,6 +9,17 @@ home safely and puts the vehicle into monitored overnight custody.
 Built with Next.js 14 (App Router), TypeScript, Tailwind and Leaflet/OpenStreetMap.
 Frontend and backend live in one repo and deploy to Vercel as a single project.
 
+### Stack
+
+| Layer | What |
+|---|---|
+| App | Next.js 14 App Router, React 18, TypeScript, Tailwind |
+| Maps | Leaflet + OpenStreetMap tiles; OSRM routes; Nominatim, Overpass, Open-Meteo for live context |
+| AI triage | LangGraph.js `StateGraph` + LangChain `ChatOpenAI` pointed at the Hugging Face router (OpenAI-compatible), Zod structured output |
+| RAG | 40 self-written guides in `data/kb/`, chunked with `RecursiveCharacterTextSplitter`, embedded once with a multilingual HF model into `data/index.json`; cosine top-k at runtime, keyword fallback |
+| Storage | In-memory by default; optional Upstash Redis over its REST API (plain `fetch`) |
+| Fallbacks | Every AI and real-data step has a timeout and a deterministic fallback; the app needs no keys |
+
 ---
 
 ## The problem
@@ -55,6 +66,17 @@ Open <http://localhost:3000>.
 **Zero configuration required.** With no environment variables the app runs in
 in-memory demo mode and every feature works. Upstash Redis is optional and only adds
 cross-device persistence.
+
+### Environment variables (all optional)
+
+Copy `.env.example` to `.env.local`. `.env.local` is gitignored; never commit a token.
+
+| Variable | Purpose | Without it |
+|---|---|---|
+| `HUGGINGFACE_API_KEY` | HF token (Inference Providers permission). Server-side only, never `NEXT_PUBLIC_`. | Deterministic triage + keyword retrieval |
+| `HF_MODEL` | Chat model on the HF router. Default `openai/gpt-oss-20b:groq` | Default used |
+| `HF_EMBED_MODEL` | Embedding model. Default `intfloat/multilingual-e5-small`. Must match the one `data/index.json` was built with. | Default used |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST persistence (both required) | In-memory storage |
 
 ---
 
@@ -126,6 +148,27 @@ npx tsx scripts/build-index.ts    # embeds the guides once, writes data/index.js
 npx tsx scripts/check-agent.ts    # self-check (add --offline to test the fallback)
 ```
 
+The committed `data/index.json` must be rebuilt **with** `HUGGINGFACE_API_KEY` set to contain
+embeddings; built without one it holds the chunks only and retrieval uses keyword search.
+`GET /api/health/ai` shows which mode is live.
+
+### Evaluation
+
+```bash
+npx tsx scripts/eval.ts           # add --offline to force the deterministic fallback
+```
+
+Runs 60 labelled phrases (English, Hinglish, typos, and vague phrases that should be
+"unknown") through the deterministic classifier and the LangGraph pipeline, prints
+accuracy, top-3 accuracy and every miss, and writes `data/eval-results.json`, which the
+`/evidence` page displays.
+
+The phrases are **self-written for this project**, deliberately not drawn from the
+knowledge-base keyword lists, and are not a real-world dataset. Do not tune the knowledge
+base against them, or the score stops meaning anything. Current committed results were
+produced **without** an API key: the keyword classifier scores 33% (37% top-3) on this
+set, which is the honest baseline the LLM path has to beat.
+
 ---
 
 ## Real data (free, no keys)
@@ -155,7 +198,7 @@ Customer (phone)                    Mechanic (laptop)              Guardian (any
       ▼                                    ▼                             ▼
    /sos ─────────► POST /api/requests   /mechanic ──► POST .../accept   /guardian/[token]
       │              │                     │            POST .../verify-otp    │
-      │              ├─ triage()           │            PATCH /api/requests/[id]│
+      │              ├─ runTriageAgent()   │            PATCH /api/requests/[id]│
       │              ├─ rankMechanics()    │                             │
       │              ├─ planParts()        │                             │
       │              └─ quotePrice()       │                             │
@@ -173,10 +216,12 @@ src/
 │   ├── mechanic/                Mechanic job board
 │   ├── guardian/[token]/        Public read-only family view
 │   ├── how/                     Demo script + judge Q&A
+│   ├── evidence/                Triage evaluation results
 │   └── api/                     All backend route handlers
 ├── components/
 │   ├── Map.tsx                  SSR-safe dynamic wrapper
 │   ├── MapView.tsx              Raw Leaflet, night-styled OSM tiles
+│   ├── WhyDiagnosis.tsx         Reasoning, citations and agent path
 │   └── ui.tsx                   Badges, pills, stat tiles
 └── lib/
     ├── knowledgeBase.ts         18 faults, keyword weights, tools, parts
@@ -187,7 +232,18 @@ src/
     ├── seed.ts                  Mechanics/shops placed relative to the incident
     ├── geo.ts                   Haversine, road factor, ETA
     ├── db.ts                    In-memory ⇄ Upstash Redis storage adapter
+    ├── realdata/                Nominatim, Open-Meteo, Overpass, OSRM (+ fallbacks)
     └── types.ts                 Shared domain types
+
+data/
+├── kb/*.md                      40 self-written guides (frontmatter: id, title, category)
+├── index.json                   Chunks (+ embeddings when built with a key)
+└── eval-results.json            Output of scripts/eval.ts
+
+scripts/
+├── build-index.ts               Chunk + embed the guides
+├── check-agent.ts               Agent self-check
+└── eval.ts                      Accuracy / top-3 on the labelled phrases
 ```
 
 ### Two design decisions worth defending in an interview
@@ -220,6 +276,7 @@ configuration.
 | `GET` | `/api/guardian/[token]` | Reduced payload for the family view. |
 | `POST` | `/api/sms` | Twilio-shaped inbound SMS webhook. |
 | `GET` | `/api/health/realdata?lat=&lng=` | Pings every real-data source, returns status and latency. |
+| `GET` | `/api/health/ai` | Embedding and chat status + latency (4 s each), model names, whether a key is set (boolean only). |
 
 ### Try the SMS fallback
 
