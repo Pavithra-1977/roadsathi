@@ -63,10 +63,27 @@ function toRow(r: AssistanceRequest): Record<string, any> {
     plan_b: r.planB,
     resolution_note: r.resolutionNote,
     timeline: r.timeline,
+    // Everything from the real-data layer lives in one jsonb column.
+    realdata: r.sources
+      ? {
+          geo: {
+            roadRef: r.location.roadRef ?? null,
+            roadName: r.location.roadName ?? null,
+            place: r.location.place ?? null,
+            district: r.location.district ?? null,
+            state: r.location.state ?? null,
+          },
+          weather: r.weather ?? null,
+          nearby: r.nearby ?? null,
+          route: r.route ?? null,
+          sources: r.sources,
+        }
+      : null,
   };
 }
 
 function fromRow(row: any): AssistanceRequest {
+  const real = row.realdata;
   return {
     id: row.id,
     createdAt: row.created_at,
@@ -75,7 +92,7 @@ function fromRow(row: any): AssistanceRequest {
     customerPhone: row.customer_phone,
     passengers: row.passengers,
     hasChildren: row.has_children,
-    location: { lat: Number(row.lat), lng: Number(row.lng) },
+    location: { lat: Number(row.lat), lng: Number(row.lng), ...(real?.geo ?? {}) },
     highwayRef: row.highway_ref,
     vehicleType: row.vehicle_type,
     vehicleModel: row.vehicle_model,
@@ -94,6 +111,9 @@ function fromRow(row: any): AssistanceRequest {
     planB: row.plan_b,
     resolutionNote: row.resolution_note,
     timeline: row.timeline ?? [],
+    ...(real
+      ? { weather: real.weather, nearby: real.nearby ?? undefined, route: real.route, sources: real.sources }
+      : {}),
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -104,7 +124,14 @@ export async function saveRequest(r: AssistanceRequest): Promise<AssistanceReque
     mem.set(r.id, r);
     return r;
   }
-  const { error } = await sb().from(TABLE).upsert(toRow(r));
+  const row = toRow(r);
+  let { error } = await sb().from(TABLE).upsert(row);
+  // Table created before the real-data layer: save without it rather than fail
+  // the SOS. Run supabase/schema.sql again to add the column.
+  if (error?.message.includes("realdata")) {
+    delete row.realdata;
+    ({ error } = await sb().from(TABLE).upsert(row));
+  }
   if (error) throw new Error(`saveRequest: ${error.message}`);
   return r;
 }

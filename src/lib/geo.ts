@@ -31,11 +31,17 @@ export function roadKm(a: LatLng, b: LatLng): number {
  * for a mechanic on a two-wheeler plus a 3 minute mobilisation buffer.
  */
 export function etaMinutes(a: LatLng, b: LatLng, avgKmph = 34): number {
-  const km = roadKm(a, b);
+  return etaFromKm(roadKm(a, b), avgKmph);
+}
+
+export function etaFromKm(km: number, avgKmph = 34): number {
   return Math.max(3, Math.round((km / avgKmph) * 60) + 3);
 }
 
-/** Approximate highway marker for a coordinate. Demo-friendly, deterministic. */
+/**
+ * Fake highway marker, used only when reverse geocoding is unavailable.
+ * The real label comes from Nominatim (see lib/realdata/nominatim.ts).
+ */
 export function highwayRefFor(p: LatLng): string {
   const highways = ["NH-44", "NH-48", "NH-16", "NH-27", "NH-19", "SH-9"];
   const idx = Math.abs(Math.round((p.lat + p.lng) * 7)) % highways.length;

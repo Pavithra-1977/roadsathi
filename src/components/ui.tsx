@@ -1,4 +1,4 @@
-import type { RequestStatus, Severity } from "@/lib/types";
+import type { DataSource, RequestStatus, Severity } from "@/lib/types";
 
 const SEVERITY: Record<Severity, { label: string; cls: string }> = {
   low: { label: "Low", cls: "border-safe/40 bg-safe/10 text-safe" },
@@ -49,4 +49,31 @@ export function Stat({
 
 export function Rupees({ amount }: { amount: number }) {
   return <>&#8377;{amount.toLocaleString("en-IN")}</>;
+}
+
+/** Where a data block came from: a free live source, or seeded demo data. */
+export function SourceBadge({ source, label }: { source?: DataSource; label: string }) {
+  const live = source === "live";
+  return (
+    <span
+      title={live ? `Fetched live from ${label}` : "Live source unavailable - showing demo data"}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+        live ? "border-safe/40 bg-safe/10 text-safe" : "border-edge bg-panel2 text-muted"
+      }`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {live ? `Live: ${label}` : "Fallback"}
+    </span>
+  );
+}
+
+export function DemoPartnerChip() {
+  return (
+    <span
+      title="Seeded demo roster - not a real business"
+      className="chip border-purple-400/40 bg-purple-400/10 py-0.5 text-[10px] text-purple-200"
+    >
+      Demo partner
+    </span>
+  );
 }

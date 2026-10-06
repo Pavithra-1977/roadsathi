@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { LatLng } from "@/lib/types";
 
-export type MarkerKind = "incident" | "mechanic" | "shop" | "safe";
+export type MarkerKind = "incident" | "mechanic" | "shop" | "safe" | "garage" | "hospital" | "police";
 
 export interface MapMarker {
   id: string;
@@ -16,8 +16,10 @@ export interface MapMarker {
 interface Props {
   center: LatLng;
   markers: MapMarker[];
-  /** Dashed route lines drawn between points, in order */
+  /** Dashed straight lines between points, in order (fallback when no road route) */
   route?: LatLng[];
+  /** Real road geometry as [lat, lng] pairs, drawn solid */
+  path?: [number, number][];
   height?: number;
   zoom?: number;
   className?: string;
@@ -28,6 +30,9 @@ const STYLE: Record<MarkerKind, { bg: string; emoji: string }> = {
   mechanic: { bg: "#FFB020", emoji: "🔧" },
   shop: { bg: "#5B8DEF", emoji: "🧰" },
   safe: { bg: "#22D3A7", emoji: "🛡️" },
+  garage: { bg: "#64748B", emoji: "🔩" },
+  hospital: { bg: "#F43F5E", emoji: "🏥" },
+  police: { bg: "#3B82F6", emoji: "🚓" },
 };
 
 /**
@@ -39,6 +44,7 @@ export default function MapView({
   center,
   markers,
   route,
+  path,
   height = 340,
   zoom = 12,
   className = "",
@@ -100,7 +106,9 @@ export default function MapView({
         bounds.push([m.position.lat, m.position.lng]);
       }
 
-      if (route && route.length > 1) {
+      if (path && path.length > 1) {
+        L.polyline(path, { color: "#FFB020", weight: 4, opacity: 0.9 }).addTo(layer);
+      } else if (route && route.length > 1) {
         L.polyline(
           route.map((p) => [p.lat, p.lng] as [number, number]),
           { color: "#FFB020", weight: 3, dashArray: "7 8", opacity: 0.85 }
@@ -119,7 +127,7 @@ export default function MapView({
     return () => {
       cancelled = true;
     };
-  }, [center.lat, center.lng, markers, route, zoom]);
+  }, [center.lat, center.lng, markers, route, path, zoom]);
 
   useEffect(() => {
     return () => {

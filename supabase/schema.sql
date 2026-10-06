@@ -35,8 +35,14 @@ create table if not exists assistance_requests (
 
   plan_b            jsonb,
   resolution_note   text,
-  timeline          jsonb not null default '[]'::jsonb
+  timeline          jsonb not null default '[]'::jsonb,
+
+  -- Real-data layer: geocode, weather, nearby OSM places, road route, sources
+  realdata          jsonb
 );
+
+-- Upgrade path for tables created before the real-data layer.
+alter table assistance_requests add column if not exists realdata jsonb;
 
 create index if not exists idx_requests_status     on assistance_requests (status);
 create index if not exists idx_requests_created    on assistance_requests (created_at desc);

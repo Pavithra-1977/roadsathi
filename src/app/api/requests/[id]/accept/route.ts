@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRequest, saveRequest } from "@/lib/db";
 import { planParts, quotePrice, rankMechanics } from "@/lib/matching";
+import { routeFor } from "@/lib/realdata";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,16 @@ export async function POST(
   r.mechanicId = chosen.mechanic.id;
   r.mechanic = chosen.mechanic;
   r.etaMinutes = chosen.etaMinutes;
+
+  // The SOS routed the top-ranked mechanic. If someone else accepted, route
+  // them instead (one OSRM call). Older requests have no route at all.
+  if (r.route?.mechanicId !== chosen.mechanic.id || r.sources?.route !== "live") {
+    const routed = await routeFor(chosen.mechanic, r.location, partsPlan.pickups.map((p) => p.location));
+    r.route = routed.data;
+    if (r.sources) r.sources.route = routed.source;
+    else r.sources = { geocode: "fallback", weather: "fallback", osm: "fallback", route: routed.source };
+  }
+  if (r.sources?.route === "live" && r.route) r.etaMinutes = r.route.etaMinutes;
   r.partsPlan = partsPlan;
   r.quotedPriceInr = quote.total;
   r.status = "assigned";
@@ -43,7 +54,7 @@ export async function POST(
   r.timeline.push({
     at: now,
     label: `${chosen.mechanic.name} accepted`,
-    detail: `${chosen.mechanic.shopName} - ETA ${chosen.etaMinutes} min`,
+    detail: `${chosen.mechanic.shopName} - ETA ${r.etaMinutes} min`,
   });
   if (partsPlan.pickups.length) {
     r.timeline.push({

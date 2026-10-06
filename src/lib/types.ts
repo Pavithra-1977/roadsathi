@@ -15,6 +15,68 @@ export interface LatLng {
   lng: number;
 }
 
+/** Where a real-data block came from. "fallback" = seeded/haversine demo data. */
+export type DataSource = "live" | "fallback";
+
+/** Reverse-geocoded context for the incident (Nominatim). */
+export interface GeoInfo {
+  roadRef: string | null;   // e.g. "NH44"
+  roadName: string | null;
+  place: string | null;
+  district: string | null;
+  state: string | null;
+}
+
+export interface IncidentLocation extends LatLng, Partial<GeoInfo> {}
+
+export interface Weather {
+  temperatureC: number;
+  precipitationMm: number;
+  weatherCode: number;
+  summary: string;
+  visibilityM: number | null;
+  windKmh: number;
+  isDay: boolean;
+  /** Rule-based advice for heavy rain, fog, night, heat */
+  safety: string[];
+}
+
+/** A real place from OpenStreetMap. Never a RoadSathi partner. */
+export interface OsmPlace {
+  name: string;
+  lat: number;
+  lng: number;
+  phone?: string;
+  distanceKm: number;
+}
+
+export interface NearbyPlaces {
+  garages: OsmPlace[];
+  partsShops: OsmPlace[];
+  hospitals: OsmPlace[];
+  police: OsmPlace[];
+  fuel: OsmPlace[];
+  busStations: OsmPlace[];
+  railwayStations: OsmPlace[];
+  lodging: OsmPlace[];
+}
+
+export interface RouteInfo {
+  /** Mechanic this route was computed for */
+  mechanicId: string;
+  /** [lat, lng] pairs, ready for Leaflet */
+  geometry: [number, number][];
+  distanceKm: number;
+  etaMinutes: number;
+}
+
+export interface DataSources {
+  geocode: DataSource;
+  weather: DataSource;
+  osm: DataSource;
+  route: DataSource;
+}
+
 export interface Mechanic {
   id: string;
   name: string;
@@ -109,8 +171,8 @@ export interface AssistanceRequest {
   customerPhone: string;
   passengers: number;
   hasChildren: boolean;
-  location: LatLng;
-  highwayRef: string;      // e.g. "NH-44, KM 212"
+  location: IncidentLocation;
+  highwayRef: string;      // e.g. "NH44, near Bhoothpur, Mahabubnagar"
   vehicleType: VehicleType;
   vehicleModel: string;
   vehiclePlate: string;
@@ -137,6 +199,12 @@ export interface AssistanceRequest {
   resolutionNote: string | null;
 
   timeline: TimelineEvent[];
+
+  // Real data (optional: absent on requests created before the real-data layer)
+  weather?: Weather | null;
+  nearby?: NearbyPlaces;
+  route?: RouteInfo | null;
+  sources?: DataSources;
 }
 
 export interface CreateRequestInput {

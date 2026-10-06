@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
-import { StatusPill } from "@/components/ui";
+import { DemoPartnerChip, StatusPill } from "@/components/ui";
 import type { LatLng, PlanBOption, RequestStatus, Severity, TimelineEvent } from "@/lib/types";
 
 interface GuardianView {
@@ -114,6 +114,7 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold">{v.mechanic.name}</span>
+                <DemoPartnerChip />
                 {v.mechanic.verified && (
                   <span className="chip border-safe/40 bg-safe/10 text-safe">✓ ID verified</span>
                 )}

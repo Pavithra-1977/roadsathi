@@ -19,7 +19,7 @@ const SCRIPT = [
   {
     t: "2:00",
     title: "Show the parts route",
-    body: "Point at the dashed line on the map. The mechanic does not go straight there — he goes via the shop that has the part. That is the difference between a 20 minute fix and a two hour round trip.",
+    body: "Point at the route line on the map - real roads from OpenStreetMap. The mechanic does not go straight there — he goes via the shop that has the part. That is the difference between a 20 minute fix and a two hour round trip.",
   },
   {
     t: "2:30",

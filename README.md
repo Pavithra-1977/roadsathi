@@ -107,6 +107,28 @@ an 8 second timeout. **A demo must never hang because a third-party API is slow.
 
 ---
 
+## Real data (free, no keys)
+
+`src/lib/realdata/` enriches every SOS with live public data, fetched in parallel under a
+5 second budget. Each source has a 4 s timeout, a 10 minute cache, and its own fallback,
+so the demo works fully offline.
+
+| Block | Source | Fallback |
+|---|---|---|
+| Road ref + place (e.g. "NH44, near Bhoothpur, Mahabubnagar") | OSM Nominatim | old seeded highway marker |
+| Weather + rain/fog/night safety lines | Open-Meteo | hidden |
+| Nearby garages, parts, hospitals, police, fuel, bus, rail, lodging | OSM Overpass | empty |
+| Road route + ETA for the dispatched mechanic | OSRM demo server | haversine x 1.25, straight line |
+
+Each block on `/track/[id]` carries a Live/Fallback badge, and a "Data sources" panel
+lists them. **Mechanics, parts inventory and pricing remain the seeded demo roster**
+("Demo partner"). Real OSM garages are shown as listings only, never as partners.
+
+Supabase users: re-run `supabase/schema.sql` to add the `realdata` jsonb column. Until
+then requests still save, just without the real-data fields.
+
+---
+
 ## Architecture
 
 ```
@@ -177,6 +199,7 @@ configuration.
 | `POST` | `/api/triage` | Live triage preview while the driver types. |
 | `GET` | `/api/guardian/[token]` | Reduced payload for the family view. |
 | `POST` | `/api/sms` | Twilio-shaped inbound SMS webhook. |
+| `GET` | `/api/health/realdata?lat=&lng=` | Pings every real-data source, returns status and latency. |
 
 ### Try the SMS fallback
 
@@ -200,7 +223,7 @@ Guardian Link. The full script with timings lives at **`/how`** in the running a
 1. **0:00** — Open with the moment, not the product. *"It is 11:40 at night on NH-44. Your tyre bursts. Your wife and your four year old are in the back. Who do you call?"* Pause.
 2. **0:30** — Raise a live SOS from your own phone. Triage, safety advice, tools and parts appear before you finish talking. **Nobody has been dispatched yet and we already know what is wrong.**
 3. **1:15** — Accept the job from the mechanic tab. The customer screen updates live with the mechanic, plate number, locked price and arrival code.
-4. **2:00** — Point at the dashed line on the map. The mechanic goes *via* the shop that has the part.
+4. **2:00** — Point at the route line on the map (real roads via OSRM; dashed straight line if offline). The mechanic goes *via* the shop that has the part.
 5. **2:30** — Open the Guardian Link. *"This is what your mother sees from home."* Usually the moment the room goes quiet.
 6. **3:10** — Break it on purpose: choose **Cannot fix — engage Plan B**. Bus, train, verified cab, custody receipt. *"Every other roadside app ends at the vehicle."*
 7. **3:50** — Close on the mechanic's earnings. *"We did not create this supply. Those garages were already sitting there, empty, that night."*

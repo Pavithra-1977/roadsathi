@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { saveRequest } from "@/lib/db";
-import { highwayRefFor } from "@/lib/geo";
 import { guardianToken, otp, requestId } from "@/lib/ids";
 import { planParts, quotePrice, rankMechanics } from "@/lib/matching";
+import { enrich } from "@/lib/realdata";
 import { triage } from "@/lib/triage";
 import type { AssistanceRequest, VehicleType } from "@/lib/types";
 
@@ -59,6 +59,9 @@ export async function POST(req: Request) {
   const partsPlan = best ? planParts(location, best.mechanic, t.requiredParts) : null;
   const quote = best ? quotePrice(t, best.distanceKm, partsPlan?.totalDetourKm ?? 0) : null;
 
+  const real = await enrich(location, best?.mechanic, partsPlan?.pickups.map((p) => p.location));
+  const eta = real.sources.route === "live" && real.route ? real.route.etaMinutes : best?.etaMinutes ?? null;
+
   const now = new Date().toISOString();
   const request: AssistanceRequest = {
     id: requestId(),
@@ -68,8 +71,8 @@ export async function POST(req: Request) {
     customerPhone: from || "unknown",
     passengers: 1,
     hasChildren: /kid|child|baby|family/i.test(parsed.symptom),
-    location,
-    highwayRef: highwayRefFor(location),
+    location: real.location,
+    highwayRef: real.highwayRef,
     vehicleType,
     vehicleModel: "Reported by SMS",
     vehiclePlate: parsed.plate,
@@ -78,7 +81,7 @@ export async function POST(req: Request) {
     partsPlan,
     mechanicId: null,
     mechanic: null,
-    etaMinutes: best?.etaMinutes ?? null,
+    etaMinutes: eta,
     quotedPriceInr: quote?.total ?? null,
     otp: otp(),
     otpVerified: false,
@@ -90,13 +93,17 @@ export async function POST(req: Request) {
       { at: now, label: "SOS received by SMS", detail: "No data connection required" },
       { at: now, label: "Triage complete", detail: t.faultLabel },
     ],
+    weather: real.weather,
+    nearby: real.nearby,
+    route: real.route,
+    sources: real.sources,
   };
 
   await saveRequest(request);
 
   const reply =
     `RoadSathi ${request.id}. Likely: ${t.faultLabel}. ` +
-    (best ? `${best.mechanic.name} is ${best.etaMinutes} min away. ` : "Finding a mechanic. ") +
+    (best ? `${best.mechanic.name} is ${eta} min away. ` : "Finding a mechanic. ") +
     `Your code is ${request.otp} - only share it when they arrive. ` +
     (quote ? `Approx Rs ${quote.total}. ` : "") +
     t.safetyAdvice[0];

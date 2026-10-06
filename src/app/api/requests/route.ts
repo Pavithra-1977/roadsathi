@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { listRequests, saveRequest, usingSupabase } from "@/lib/db";
-import { highwayRefFor } from "@/lib/geo";
 import { guardianToken, otp, requestId } from "@/lib/ids";
 import { planParts, quotePrice, rankMechanics } from "@/lib/matching";
+import { enrich } from "@/lib/realdata";
 import { triageWithLLM } from "@/lib/triage";
 import type {
   AssistanceRequest, CreateRequestInput, RequestStatus,
@@ -62,6 +62,17 @@ export async function POST(req: Request) {
     ? quotePrice(triage, best.distanceKm, partsPlan?.totalDetourKm ?? 0)
     : null;
 
+  // 5. Real-world context: road, weather, nearby OSM places, road route.
+  //    Each block falls back to demo data on its own; this never throws.
+  const real = await enrich(
+    location,
+    best?.mechanic,
+    partsPlan?.pickups.map((p) => p.location)
+  );
+  const eta = real.sources.route === "live" && real.route
+    ? real.route.etaMinutes
+    : best?.etaMinutes ?? null;
+
   const now = new Date().toISOString();
   const request: AssistanceRequest = {
     id: requestId(),
@@ -71,8 +82,8 @@ export async function POST(req: Request) {
     customerPhone: body.customerPhone,
     passengers: body.passengers ?? 1,
     hasChildren: Boolean(body.hasChildren),
-    location,
-    highwayRef: highwayRefFor(location),
+    location: real.location,
+    highwayRef: real.highwayRef,
     vehicleType,
     vehicleModel: body.vehicleModel || "Unspecified",
     vehiclePlate: body.vehiclePlate || "",
@@ -81,7 +92,7 @@ export async function POST(req: Request) {
     partsPlan,
     mechanicId: null,
     mechanic: null,
-    etaMinutes: best?.etaMinutes ?? null,
+    etaMinutes: eta,
     quotedPriceInr: quote?.total ?? null,
     otp: otp(),
     otpVerified: false,
@@ -90,7 +101,7 @@ export async function POST(req: Request) {
     planB: null,
     resolutionNote: null,
     timeline: [
-      { at: now, label: "SOS raised", detail: highwayRefFor(location) },
+      { at: now, label: "SOS raised", detail: real.highwayRef },
       {
         at: now,
         label: "Triage complete",
@@ -102,6 +113,10 @@ export async function POST(req: Request) {
         detail: `${ranked.length} mechanic${ranked.length === 1 ? "" : "s"} notified`,
       },
     ],
+    weather: real.weather,
+    nearby: real.nearby,
+    route: real.route,
+    sources: real.sources,
   };
 
   await saveRequest(request);

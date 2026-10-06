@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
-import { SeverityBadge } from "@/components/ui";
+import { DemoPartnerChip, SeverityBadge } from "@/components/ui";
 import { partName } from "@/lib/knowledgeBase";
 import type { TriageResult, VehicleType } from "@/lib/types";
 
@@ -412,6 +412,7 @@ export default function SosPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-sm font-semibold">{c.mechanic.name}</span>
                         {c.mechanic.verified && <span className="text-xs text-safe">✓</span>}
+                        <DemoPartnerChip />
                         {c.idleBoost && (
                           <span className="rounded bg-safe/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-safe">
                             idle
