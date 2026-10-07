@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 
 const CHAPTERS = [
   {
@@ -158,8 +159,8 @@ function Reveal({ children, delay = 0, className = "" }: { children: React.React
   );
 }
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber">{children}</div>;
+function Eyebrow({ children }: { children: string }) {
+  return <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber">{useT()(children)}</div>;
 }
 
 /* ------------------------------------------------------------ pinned video story */
@@ -169,6 +170,7 @@ function Story() {
   const videos = useRef<(HTMLVideoElement | null)[]>([]);
   const [active, setActive] = useState(0);
   const onScreen = useOnScreen(wrap);
+  const t = useT();
 
   useScrollFrame(() => {
     if (!wrap.current) return;
@@ -216,19 +218,19 @@ function Story() {
               <div className="max-w-xl">
                 <div className="text-xs font-semibold tracking-[0.2em] text-slate-300">{c.n}</div>
                 <Heading className="mt-2 text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-50 sm:text-6xl">
-                  {c.title}
+                  {t(c.title)}
                   {c.accent && (
                     <span className="block bg-gradient-to-r from-violet-300 to-orange-300 bg-clip-text text-transparent">
-                      {c.accent}
+                      {t(c.accent)}
                     </span>
                   )}
                 </Heading>
-                <p className="mt-4 text-[15px] leading-relaxed text-slate-200">{c.body}</p>
+                <p className="mt-4 text-[15px] leading-relaxed text-slate-200">{t(c.body)}</p>
                 {i === 0 && (
                   <div className="mt-6 flex flex-wrap gap-3">
-                    <Link href="/sos" className="btn-sos rounded-full px-6 py-3">🚨 Raise an SOS</Link>
+                    <Link href="/sos" className="btn-sos rounded-full px-6 py-3">🚨 {t("Raise an SOS")}</Link>
                     <Link href="/mechanic" className="btn rounded-full border border-white/30 bg-white/10 px-6 py-3 text-slate-50 backdrop-blur hover:bg-white/20">
-                      🔧 I am a mechanic
+                      🔧 {t("I am a mechanic")}
                     </Link>
                   </div>
                 )}
@@ -248,6 +250,7 @@ function Story() {
 /* ------------------------------------------------------------ dashboard tilting into place */
 function ControlRoom() {
   const card = useRef<HTMLDivElement>(null);
+  const t = useT();
   useScrollFrame(() => {
     const el = card.current;
     if (!el) return;
@@ -266,32 +269,32 @@ function ControlRoom() {
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           <div className="rounded-xl border border-sos/40 bg-sos/10 p-3">
-            <div className="text-[10px] uppercase tracking-wider text-sos">Triage</div>
-            <div className="mt-0.5 text-sm font-bold">Flat tyre / puncture</div>
-            <div className="text-[11px] text-muted">92% confidence</div>
+            <div className="text-[10px] uppercase tracking-wider text-sos">{t("Triage")}</div>
+            <div className="mt-0.5 text-sm font-bold">{t("Flat tyre / puncture")}</div>
+            <div className="text-[11px] text-muted">{t("{n}% confidence", { n: 92 })}</div>
           </div>
           <div className={stat}>
-            <div className="text-[10px] uppercase tracking-wider text-muted">Ravi Kumar · ✅ verified</div>
-            <div className="text-xl font-extrabold text-amber">7 min</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted">Ravi Kumar · ✅ {t("verified")}</div>
+            <div className="text-xl font-extrabold text-amber">{t("{n} min", { n: 7 })}</div>
           </div>
           <div className={stat}>
-            <div className="text-[10px] uppercase tracking-wider text-muted">Locked price</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted">{t("Locked price")}</div>
             <div className="text-xl font-extrabold">&#8377;641</div>
           </div>
           <div className={stat}>
-            <div className="text-[10px] uppercase tracking-wider text-muted">Arrival code</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted">{t("Arrival code")}</div>
             <div className="text-xl font-extrabold tracking-[0.2em] text-amber">4812</div>
           </div>
         </div>
         <div className="mt-2 grid gap-2 sm:mt-3 sm:grid-cols-[1fr_1.4fr] sm:gap-3">
           <div className="rounded-xl border border-safe/40 bg-safe/10 p-3">
-            <div className="text-xs font-semibold text-safe">Guardian Link sent</div>
-            <div className="text-[11px] text-muted">Amma is watching this trip from home</div>
+            <div className="text-xs font-semibold text-safe">{t("Guardian Link sent")}</div>
+            <div className="text-[11px] text-muted">{t("Amma is watching this trip from home")}</div>
           </div>
           <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] font-semibold sm:text-[11px]">
             {["Finding", "On the way", "On site", "Resolved"].map((s, i) => (
               <div key={s} className={`grid place-items-center rounded-lg border px-1 py-3 ${i === 1 ? "border-amber bg-amber/10 text-amber" : "border-edge text-muted"}`}>
-                {s}
+                {t(s)}
               </div>
             ))}
           </div>
@@ -300,7 +303,7 @@ function ControlRoom() {
       <Reveal className="mt-12 text-center">
         <Eyebrow>One screen</Eyebrow>
         <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
-          Triage, mechanic, locked price and family on one screen
+          {t("Triage, mechanic, locked price and family on one screen")}
         </h2>
       </Reveal>
     </section>
@@ -310,6 +313,7 @@ function ControlRoom() {
 /* ------------------------------------------------------------ features slide sideways while pinned */
 function FeatureRail() {
   const wrap = useRef<HTMLElement>(null);
+  const t = useT();
   const track = useRef<HTMLDivElement>(null);
   useScrollFrame(() => {
     const w = wrap.current, t = track.current;
@@ -323,14 +327,14 @@ function FeatureRail() {
       <div className="sticky top-0 flex h-[100svh] flex-col justify-center overflow-hidden">
         <div className="mx-auto w-full max-w-6xl px-5">
           <Eyebrow>Features</Eyebrow>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">What makes it different</h2>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t("What makes it different")}</h2>
           <div className="mt-10">
             <div ref={track} className="flex w-max gap-4 will-change-transform sm:gap-5">
               {FEATURES.map((f) => (
                 <div key={f.title} className="w-[78vw] max-w-[340px] shrink-0 rounded-2xl border border-edge bg-white p-6 shadow-lg shadow-black/5">
                   <div className="grid h-12 w-12 place-items-center rounded-full border border-edge text-2xl">{f.icon}</div>
-                  <div className="mt-4 font-bold">{f.title}</div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{f.body}</p>
+                  <div className="mt-4 font-bold">{t(f.title)}</div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{t(f.body)}</p>
                 </div>
               ))}
             </div>
@@ -346,6 +350,7 @@ function FinalCta() {
   const ref = useRef<HTMLElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const onScreen = useOnScreen(ref);
+  const t = useT();
   useEffect(() => {
     if (onScreen) video.current?.play().catch(() => { /* autoplay refused */ });
     else video.current?.pause();
@@ -356,19 +361,19 @@ function FinalCta() {
       <video ref={video} src="/media/landing-1.mp4" muted loop playsInline preload="none" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-[#0b1020]/65" />
       <Reveal className="relative max-w-2xl">
-        <h2 className="text-4xl font-extrabold tracking-tight text-slate-50 sm:text-5xl">Ready when the road isn&apos;t?</h2>
+        <h2 className="text-4xl font-extrabold tracking-tight text-slate-50 sm:text-5xl">{t("Ready when the road isn't?")}</h2>
         <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-slate-200">
-          Create your account once. When something goes wrong on the highway, help is one tap away.
+          {t("Create your account once. When something goes wrong on the highway, help is one tap away.")}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/sign-up" className="btn-primary rounded-full px-7 py-3 text-base">Create Account</Link>
+          <Link href="/sign-up" className="btn-primary rounded-full px-7 py-3 text-base">{t("Create Account")}</Link>
           <Link href="/sign-in" className="btn rounded-full border border-white/30 bg-white/10 px-7 py-3 text-base text-slate-50 backdrop-blur hover:bg-white/20">
-            Sign In
+            {t("Sign In")}
           </Link>
         </div>
         <p className="mt-6 text-sm text-slate-300">
-          Stranded right now?{" "}
-          <Link href="/sos" className="font-semibold text-slate-50 underline">Raise an SOS</Link>, no account needed.
+          {t("Stranded right now?")}{" "}
+          <Link href="/sos" className="font-semibold text-slate-50 underline">{t("Raise an SOS")}</Link>, {t("no account needed.")}
         </p>
       </Reveal>
     </section>
@@ -376,6 +381,7 @@ function FinalCta() {
 }
 
 export default function Home() {
+  const t = useT();
   return (
     <main className="overflow-x-clip">
       <Story />
@@ -385,14 +391,14 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-5 py-24 sm:py-32">
         <Reveal className="text-center">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">From one tap to help on the way</h2>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t("From one tap to help on the way")}</h2>
         </Reveal>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (
             <Reveal key={s.n} delay={i * 150} className="rounded-2xl border border-edge bg-white p-6 shadow-sm">
               <div className="grid h-10 w-10 place-items-center rounded-full border-2 border-amber text-sm font-bold text-amber">{i + 1}</div>
-              <div className="mt-4 font-bold">{s.title}</div>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">{s.body}</p>
+              <div className="mt-4 font-bold">{t(s.title)}</div>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">{t(s.body)}</p>
             </Reveal>
           ))}
         </div>
@@ -404,7 +410,7 @@ export default function Home() {
       <section className="mx-auto max-w-5xl px-5 py-24 sm:py-32">
         <Reveal className="text-center">
           <Eyebrow>Built for the 2 a.m. breakdown</Eyebrow>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Measured, not promised</h2>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t("Measured, not promised")}</h2>
         </Reveal>
         <Reveal className="mt-10 grid grid-cols-3 divide-x divide-edge rounded-2xl border border-edge bg-white shadow-sm">
           {[
@@ -414,12 +420,12 @@ export default function Home() {
           ].map(([v, l]) => (
             <div key={l} className="p-4 sm:p-6">
               <div className="text-2xl font-extrabold text-amber sm:text-4xl">{v}</div>
-              <div className="mt-1 text-[11px] leading-tight text-muted sm:text-sm">{l}</div>
+              <div className="mt-1 text-[11px] leading-tight text-muted sm:text-sm">{t(l)}</div>
             </div>
           ))}
         </Reveal>
         <p className="mt-4 text-center text-xs text-muted">
-          How good is the triage? <Link href="/evidence" className="font-semibold text-amber underline">See the evidence</Link>
+          {t("How good is the triage?")} <Link href="/evidence" className="font-semibold text-amber underline">{t("See the evidence")}</Link>
         </p>
       </section>
 
@@ -427,13 +433,13 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-5 pb-24 sm:pb-32">
         <Reveal className="text-center">
           <Eyebrow>Why it exists</Eyebrow>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Why this needs to exist</h2>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t("Why this needs to exist")}</h2>
         </Reveal>
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {WHY.map((w, i) => (
             <Reveal key={w.title} delay={i * 150} className="rounded-2xl border border-edge border-t-amber/60 bg-white p-6 shadow-sm [border-top-width:2px]">
-              <div className="font-bold">{w.title}</div>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{w.body}</p>
+              <div className="font-bold">{t(w.title)}</div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{t(w.body)}</p>
             </Reveal>
           ))}
         </div>

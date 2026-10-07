@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SESSION_KEY } from "@/components/AuthForm";
 import { useEffect, useState } from "react";
+import { LanguageSelect, useT } from "@/lib/i18n";
 
 export const LAST_REQUEST_KEY = "rs:lastRequest";
 
@@ -11,6 +12,7 @@ export const LAST_REQUEST_KEY = "rs:lastRequest";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? "/";
   const router = useRouter();
+  const t = useT();
   const [lastId, setLastId] = useState<string | null>(null);
   const [who, setWho] = useState<{ name: string; role?: string } | null>(null);
 
@@ -25,7 +27,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (path === "/sign-in" || path === "/sign-up") return <>{children}</>;
 
   // Guardian links are opened by family at home: light theme, no app navigation.
-  if (path.startsWith("/guardian")) return <div className="app-light min-h-screen">{children}</div>;
+  if (path.startsWith("/guardian")) {
+    return (
+      <div className="app-light min-h-screen">
+        <div className="flex justify-end px-4 pt-3">
+          <LanguageSelect className="input !w-auto py-1.5 text-xs" />
+        </div>
+        {children}
+      </div>
+    );
+  }
 
   const nav = [
     { href: "/sos", label: "Get Help", icon: "🚨" },
@@ -54,14 +65,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               }`}
             >
               <span>{n.icon}</span>
-              {n.label}
+              {t(n.label)}
             </Link>
           ))}
         </nav>
+        <LanguageSelect className="input mt-auto mb-3 py-2" />
         {who && (
-          <div className="mt-auto px-3 pb-1 text-xs text-muted">
-            Signed in as <span className="font-semibold text-white">{who.name}</span>
-            {who.role && <span className="ml-1 rounded-full bg-amber/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber">{who.role}</span>}
+          <div className="px-3 pb-1 text-xs text-muted">
+            {t("Signed in as")} <span className="font-semibold text-white">{who.name}</span>
+            {who.role && <span className="ml-1 rounded-full bg-amber/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber">{t(who.role === "mechanic" ? "Mechanic" : "Customer")}</span>}
           </div>
         )}
         <button
@@ -69,18 +81,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             try { localStorage.removeItem(SESSION_KEY); } catch { /* storage blocked */ }
             router.push("/");
           }}
-          className={`${who ? "" : "mt-auto "}mb-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-muted transition hover:bg-panel2 hover:text-white`}
+          className={`mb-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-muted transition hover:bg-panel2 hover:text-white`}
         >
-          <span>↩</span>Sign out
+          <span>↩</span>{t("Sign out")}
         </button>
         <div className="rounded-xl border border-edge bg-panel2 p-3 text-xs text-muted">
-          Emergency: <span className="font-semibold text-white">112</span> · Ambulance{" "}
-          <span className="font-semibold text-white">108</span> · Highway{" "}
+          {t("Emergency")}: <span className="font-semibold text-white">112</span> · {t("Ambulance")}{" "}
+          <span className="font-semibold text-white">108</span> · {t("Highway")}{" "}
           <span className="font-semibold text-white">1033</span>
         </div>
       </aside>
 
-      <div className="pb-20 md:pb-0 md:pl-60">{children}</div>
+      <div className="pb-20 md:pb-0 md:pl-60">
+        <div className="flex justify-end px-4 pt-3 md:hidden">
+          <LanguageSelect className="input !w-auto py-1.5 text-xs" />
+        </div>
+        {children}
+      </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-[1000] flex border-t border-edge bg-white md:hidden">
         {nav.map((n) => (
@@ -92,7 +109,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             }`}
           >
             <span className="text-lg leading-none">{n.icon}</span>
-            {n.label}
+            {t(n.label)}
           </Link>
         ))}
       </nav>
@@ -101,25 +118,28 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function LandingChrome({ children }: { children: React.ReactNode }) {
-  const link = "hidden rounded-full px-3 py-1.5 text-muted transition hover:text-white lg:block";
+  const t = useT();
+  const link = "hidden rounded-full px-3 py-1.5 text-muted transition hover:text-white xl:block";
   return (
     <div className="app-light min-h-screen">
       {/* Floating pill nav, as in the landing reference. */}
       <header className="fixed inset-x-0 top-3 z-[1000] flex justify-center px-3">
-        <div className="flex w-full max-w-4xl items-center justify-between gap-2 rounded-full border border-edge bg-white/90 py-1.5 pl-2 pr-1.5 text-sm shadow-lg shadow-black/5 backdrop-blur">
+        <div className="flex w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-edge bg-white/90 py-1.5 pl-2 pr-1.5 text-sm shadow-lg shadow-black/5 backdrop-blur">
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-amber text-base">🛞</span>
             <span className="hidden text-[15px] font-bold tracking-tight min-[400px]:block">RoadSathi</span>
           </Link>
-          <nav className="flex items-center gap-1">
-            <Link href="/mechanic" className={link}>Mechanic</Link>
-            <Link href="/how" className={link}>How it works</Link>
-            <Link href="/evidence" className={link}>Evidence</Link>
-            <Link href="/sign-in" className="rounded-full border border-edge px-2.5 py-1.5 text-xs font-medium sm:px-3.5 sm:text-sm">
-              Sign In
+          <nav className="flex items-center gap-1 whitespace-nowrap">
+            <Link href="/mechanic" className={link}>{t("Mechanic")}</Link>
+            <Link href="/how" className={link}>{t("How it works")}</Link>
+            <Link href="/evidence" className={link}>{t("Evidence")}</Link>
+            <LanguageSelect short className="rounded-full border border-edge bg-white px-1.5 py-1.5 text-xs sm:hidden" />
+            <LanguageSelect className="hidden rounded-full border border-edge bg-white px-2 py-1.5 text-sm sm:block" />
+            <Link href="/sign-in" className="hidden rounded-full border border-edge px-2.5 py-1.5 text-xs font-medium min-[400px]:block sm:px-3.5 sm:text-sm">
+              {t("Sign In")}
             </Link>
             <Link href="/sign-up" className="btn-primary rounded-full !px-2.5 !py-1.5 !text-xs sm:!px-3.5 sm:!text-sm">
-              Sign Up
+              {t("Sign Up")}
             </Link>
             <Link href="/sos" className="btn-sos rounded-full !px-2.5 !py-1.5 !text-xs sm:!px-3.5 sm:!text-sm">
               <span className="relative flex h-2 w-2">
@@ -136,14 +156,14 @@ function LandingChrome({ children }: { children: React.ReactNode }) {
 
       <footer className="py-8 text-center text-xs text-muted">
         <nav className="mb-3 flex justify-center gap-4 text-sm">
-          <Link href="/mechanic" className="hover:text-white">Mechanic</Link>
-          <Link href="/how" className="hover:text-white">How it works</Link>
-          <Link href="/evidence" className="hover:text-white">Evidence</Link>
+          <Link href="/mechanic" className="hover:text-white">{t("Mechanic")}</Link>
+          <Link href="/how" className="hover:text-white">{t("How it works")}</Link>
+          <Link href="/evidence" className="hover:text-white">{t("Evidence")}</Link>
         </nav>
-        🛞 RoadSathi &middot; built for open innovation &middot; emergency services in India:
-        <span className="font-semibold text-white"> 112</span> (all) &middot;
-        <span className="font-semibold text-white"> 108</span> (ambulance) &middot;
-        <span className="font-semibold text-white"> 1033</span> (highway helpline)
+        🛞 RoadSathi &middot; {t("built for open innovation")} &middot; {t("emergency services in India")}:
+        <span className="font-semibold text-white"> 112</span> ({t("all")}) &middot;
+        <span className="font-semibold text-white"> 108</span> ({t("ambulance")}) &middot;
+        <span className="font-semibold text-white"> 1033</span> ({t("highway helpline")})
       </footer>
     </div>
   );

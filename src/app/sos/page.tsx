@@ -8,6 +8,7 @@ import { DemoPartnerChip, SeverityBadge } from "@/components/ui";
 import { LAST_REQUEST_KEY } from "@/components/AppShell";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import WhyDiagnosis from "@/components/WhyDiagnosis";
+import { useT } from "@/lib/i18n";
 import { partName } from "@/lib/knowledgeBase";
 import type { TriageResult, VehicleType } from "@/lib/types";
 
@@ -44,6 +45,7 @@ const STEPS = [
 
 export default function SosPage() {
   const router = useRouter();
+  const t = useT();
   const [step, setStep] = useState<(typeof STEPS)[number]["id"]>("problem");
 
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -121,7 +123,7 @@ export default function SosPage() {
   const markers = useMemo<MapMarker[]>(() => {
     if (!pos) return [];
     const list: MapMarker[] = [
-      { id: "me", position: pos, kind: "incident", title: "You are here", subtitle: "SOS location" },
+      { id: "me", position: pos, kind: "incident", title: t("You are here"), subtitle: t("SOS location") },
     ];
     for (const c of candidates) {
       list.push({
@@ -129,11 +131,11 @@ export default function SosPage() {
         position: c.mechanic.location,
         kind: "mechanic",
         title: c.mechanic.name,
-        subtitle: `${c.mechanic.shopName} · ${c.etaMinutes} min`,
+        subtitle: `${c.mechanic.shopName} · ${t("{n} min", { n: c.etaMinutes })}`,
       });
     }
     return list;
-  }, [pos, candidates]);
+  }, [pos, candidates, t]);
 
   async function analyse(answer?: string) {
     if (symptomText.trim().length < 4) return;
@@ -162,27 +164,24 @@ export default function SosPage() {
     }
   }
 
-  /** Voice: put the understood problem in the field, run the existing triage, return facts to read back. */
-  async function voiceTriage(text: string): Promise<string | null> {
+  /**
+   * Voice: put the recognised words in the Problem field and run the existing triage.
+   * Non-English speech uses the existing agent mode (multilingual when the AI is configured;
+   * otherwise /api/triage falls back to the knowledge base itself).
+   */
+  async function voiceTriage(text: string, agent: boolean): Promise<{ triage: TriageResult; eta: number | null }> {
     setSymptomText(text);
     const res = await fetch("/api/triage", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ symptomText: text, vehicleType, lat: pos?.lat, lng: pos?.lng }),
+      body: JSON.stringify({ symptomText: text, vehicleType, vehicleModel, hasChildren, lat: pos?.lat, lng: pos?.lng, agent }),
     });
     if (!res.ok) throw new Error("Triage failed. Your words are in the box; you can still send the SOS.");
     const data = await res.json();
-    const t: TriageResult = data.triage;
     const c: Candidate[] = data.candidates ?? [];
-    setTriage(t);
+    setTriage(data.triage);
     setCandidates(c);
-    return [
-      `Problem: ${t.faultLabel}. Severity: ${t.severity}.`,
-      `Do this now: ${t.safetyAdvice.slice(0, 2).join(" ")}`,
-      c[0] ? `Nearest mechanic ${c[0].mechanic.name} can reach in about ${c[0].etaMinutes} minutes.` : "",
-      t.roadsideFixable ? "Usually fixable at the roadside." : "Usually not fixable roadside; a Plan B will be arranged.",
-      "Send the SOS to dispatch a mechanic.",
-    ].join(" ");
+    return { triage: data.triage, eta: c[0]?.etaMinutes ?? null };
   }
 
   async function submit() {
@@ -217,14 +216,13 @@ export default function SosPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">Get help</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">{t("Get help")}</h1>
         <p className="mt-1 text-sm text-muted">
-          Two things matter right now: your location, and roughly what is wrong. Everything
-          else can wait.
+          {t("Two things matter right now: your location, and roughly what is wrong. Everything else can wait.")}
         </p>
       </div>
 
-      <div className="mb-6 grid grid-cols-3 gap-2 sm:flex">
+      <div className="mb-6 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
         {STEPS.map((s, i) => (
           <button
             key={s.id}
@@ -234,8 +232,8 @@ export default function SosPage() {
             }`}
           >
             <span>{i + 1}</span>
-            <span className="truncate sm:hidden">{s.short}</span>
-            <span className="hidden sm:inline">{s.label}</span>
+            <span className="truncate sm:hidden">{t(s.short)}</span>
+            <span className="hidden sm:inline">{t(s.label)}</span>
           </button>
         ))}
       </div>
@@ -245,18 +243,18 @@ export default function SosPage() {
           <div className="min-w-0 space-y-5">
           {/* problem */}
           <div className="card-pad">
-            <div className="font-bold">🔧 What is wrong?</div>
+            <div className="font-bold">🔧 {t("What is wrong?")}</div>
             <p className="mt-0.5 text-xs text-muted">
-              Plain words are fine. Hinglish is fine. &quot;Gaadi band ho gayi&quot; works.
+              {t("Plain words are fine. Hinglish is fine. \"Gaadi band ho gayi\" works.")}
             </p>
 
             <div className="mt-3">
-              <VoiceAssistant onUnderstood={voiceTriage} />
+              <VoiceAssistant onTriage={voiceTriage} />
             </div>
 
             <textarea
               className="input mt-3 min-h-[92px] resize-y"
-              placeholder="e.g. front left tyre puncture, air going out fast, wife and small kid with me"
+              placeholder={t("e.g. front left tyre puncture, air going out fast, wife and small kid with me")}
               value={symptomText}
               onChange={(e) => setSymptomText(e.target.value)}
             />
@@ -268,38 +266,38 @@ export default function SosPage() {
                   onClick={() => setSymptomText(q)}
                   className="chip transition hover:border-amber/50 hover:text-white"
                 >
-                  {q.length > 40 ? `${q.slice(0, 38)}…` : q}
+                  {(() => { const label = t(q); return label.length > 40 ? `${label.slice(0, 38)}…` : label; })()}
                 </button>
               ))}
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div>
-                <label className="label">Vehicle</label>
+                <label className="label">{t("Vehicle")}</label>
                 <select
                   className="input"
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value as VehicleType)}
                 >
                   {VEHICLES.map((v) => (
-                    <option key={v.value} value={v.value}>{v.label}</option>
+                    <option key={v.value} value={v.value}>{t(v.label)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="label">Model</label>
+                <label className="label">{t("Model")}</label>
                 <input className="input" placeholder="Swift VDi" value={vehicleModel}
                   onChange={(e) => setVehicleModel(e.target.value)} />
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <label className="label">Plate</label>
+                <label className="label">{t("Plate")}</label>
                 <input className="input" placeholder="TS 09 AB 1234" value={vehiclePlate}
                   onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())} />
               </div>
             </div>
           </div>
             <button onClick={() => setStep("location")} className="btn-primary w-full">
-              Next: confirm location →
+              {t("Next: confirm location")} →
             </button>
           </div>
           <div className="min-w-0 space-y-5">
@@ -307,7 +305,7 @@ export default function SosPage() {
             <div className="card-pad animate-rise">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted">
-                  Live triage · {triage.agent?.source === "llm+rag" ? "AI (LLM + RAG)" : "knowledge base"}
+                  {t("Live triage")} · {triage.agent?.source === "llm+rag" ? t("AI (LLM + RAG)") : t("knowledge base")}
                 </div>
                 <SeverityBadge severity={triage.severity} />
               </div>
@@ -326,11 +324,11 @@ export default function SosPage() {
 
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 <div className="stat">
-                  <div className="text-[10px] uppercase tracking-wider text-muted">Fix time</div>
-                  <div className="font-bold">~{triage.estimatedFixMinutes} min</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted">{t("Fix time")}</div>
+                  <div className="font-bold">~{t("{n} min", { n: triage.estimatedFixMinutes })}</div>
                 </div>
                 <div className="stat">
-                  <div className="text-[10px] uppercase tracking-wider text-muted">Est. cost</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted">{t("Est. cost")}</div>
                   <div className="font-bold">
                     &#8377;{triage.estimatedCostRange[0]}–{triage.estimatedCostRange[1]}
                   </div>
@@ -343,14 +341,14 @@ export default function SosPage() {
                   : "border-purple-400/40 bg-purple-400/10 text-purple-300"
               }`}>
                 {triage.roadsideFixable
-                  ? "✅ Normally fixable at the roadside"
-                  : "⚠️ Usually not fixable roadside — Plan B is being prepared in parallel"}
+                  ? `✅ ${t("Normally fixable at the roadside")}`
+                  : `⚠️ ${t("Usually not fixable roadside — Plan B is being prepared in parallel")}`}
               </div>
 
               {/* safety advice up front, before anyone is dispatched */}
               <div className="mt-4">
                 <div className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">
-                  Do this right now
+                  {t("Do this right now")}
                 </div>
                 <ul className="space-y-1.5">
                   {triage.safetyAdvice.map((a) => (
@@ -365,7 +363,7 @@ export default function SosPage() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>
                     <div className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">
-                      Tools to bring
+                      {t("Tools to bring")}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {triage.requiredTools.map((t) => <span key={t} className="chip">{t}</span>)}
@@ -373,14 +371,14 @@ export default function SosPage() {
                   </div>
                   <div>
                     <div className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">
-                      Parts likely needed
+                      {t("Parts likely needed")}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {triage.requiredParts.length
                         ? triage.requiredParts.map((p) => (
                             <span key={p} className="chip border-amber/30 text-amber">{partName(p)}</span>
                           ))
-                        : <span className="text-xs text-muted">None</span>}
+                        : <span className="text-xs text-muted">{t("None")}</span>}
                     </div>
                   </div>
                 </div>
@@ -388,7 +386,7 @@ export default function SosPage() {
             </div>
           ) : (
             <div className="card-pad text-center text-sm text-muted">
-              Start describing the problem and triage will appear here instantly.
+              {t("Start describing the problem and triage will appear here instantly.")}
             </div>
           )}
 
@@ -399,31 +397,31 @@ export default function SosPage() {
                   onSubmit={(e) => { e.preventDefault(); if (answerDraft.trim()) analyse(answerDraft.trim()); }}
                   className="space-y-2"
                 >
-                  <div className="text-[10px] uppercase tracking-wider text-blue-300">One quick question</div>
+                  <div className="text-[10px] uppercase tracking-wider text-blue-300">{t("One quick question")}</div>
                   <p className="text-sm font-semibold">{triage.clarifyingQuestion}</p>
                   <input
                     className="input"
                     value={answerDraft}
                     onChange={(e) => setAnswerDraft(e.target.value)}
-                    placeholder="Type your answer (English, Hindi or Hinglish)"
+                    placeholder={t("Type your answer (English, Hindi or Hinglish)")}
                   />
                   <button type="submit" disabled={analysing || !answerDraft.trim()} className="btn-ghost w-full">
-                    {analysing ? "Analysing…" : "Answer and re-check"}
+                    {analysing ? t("Analysing…") : t("Answer and re-check")}
                   </button>
-                  <p className="text-[11px] text-muted">Optional. You can send the SOS right now without answering.</p>
+                  <p className="text-[11px] text-muted">{t("Optional. You can send the SOS right now without answering.")}</p>
                 </form>
               ) : (
                 <button onClick={() => analyse()} disabled={analysing} className="btn-ghost w-full">
                   {analysing
-                    ? "Analysing with AI (up to 8 s)…"
+                    ? t("Analysing with AI (up to 8 s)…")
                     : triage.agent?.source === "llm+rag"
-                      ? "🧠 Re-analyse with AI"
-                      : "🧠 Analyse with AI (LangGraph + RAG)"}
+                      ? `🧠 ${t("Re-analyse with AI")}`
+                      : `🧠 ${t("Analyse with AI (LangGraph + RAG)")}`}
                 </button>
               )}
               {clarification && (
                 <p className="mt-2 text-[11px] text-muted">
-                  Your answer will be sent with the SOS: &quot;{clarification.answer}&quot;
+                  {t("Your answer will be sent with the SOS:")} &quot;{clarification.answer}&quot;
                 </p>
               )}
             </div>
@@ -441,22 +439,22 @@ export default function SosPage() {
           <div className="card-pad">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="font-bold">📍 Your location</div>
+                <div className="font-bold">📍 {t("Your location")}</div>
                 <div className="mt-0.5 text-xs text-muted">
-                  {locState === "locating" && "Getting a GPS fix…"}
-                  {locState === "ok" && pos && `Locked: ${pos.lat}, ${pos.lng}`}
-                  {locState === "denied" && "Location blocked — using a demo point. Edit it below."}
-                  {locState === "idle" && "Waiting…"}
+                  {locState === "locating" && t("Getting a GPS fix…")}
+                  {locState === "ok" && pos && `${t("Locked")}: ${pos.lat}, ${pos.lng}`}
+                  {locState === "denied" && t("Location blocked — using a demo point. Edit it below.")}
+                  {locState === "idle" && t("Waiting…")}
                 </div>
               </div>
               <button onClick={locate} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
-                Refresh
+                {t("Refresh")}
               </button>
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="label">Latitude</label>
+                <label className="label">{t("Latitude")}</label>
                 <input
                   className="input" type="number" step="0.000001"
                   value={pos?.lat ?? ""}
@@ -464,7 +462,7 @@ export default function SosPage() {
                 />
               </div>
               <div>
-                <label className="label">Longitude</label>
+                <label className="label">{t("Longitude")}</label>
                 <input
                   className="input" type="number" step="0.000001"
                   value={pos?.lng ?? ""}
@@ -477,7 +475,7 @@ export default function SosPage() {
           {candidates.length > 0 && (
             <div className="card-pad">
               <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">
-                Mechanics who can take this ({candidates.length})
+                {t("Mechanics who can take this ({n})", { n: candidates.length })}
               </div>
               <div className="space-y-2">
                 {candidates.map((c) => (
@@ -491,7 +489,7 @@ export default function SosPage() {
                         <DemoPartnerChip />
                         {c.idleBoost && (
                           <span className="rounded bg-safe/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-safe">
-                            idle
+                            {t("idle")}
                           </span>
                         )}
                       </div>
@@ -501,7 +499,7 @@ export default function SosPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-base font-extrabold text-amber">{c.etaMinutes}</div>
-                      <div className="text-[9px] uppercase text-muted">min</div>
+                      <div className="text-[9px] uppercase text-muted">{t("min")}</div>
                     </div>
                   </div>
                 ))}
@@ -509,7 +507,7 @@ export default function SosPage() {
             </div>
           )}
             <button onClick={() => setStep("details")} className="btn-primary w-full">
-              Next: your details →
+              {t("Next: your details")} →
             </button>
           </div>
           <div className="min-w-0">
@@ -522,30 +520,30 @@ export default function SosPage() {
         <div className="mx-auto max-w-2xl space-y-5">
           {/* people */}
           <div className="card-pad">
-            <div className="font-bold">👨‍👩‍👧 Who is with you?</div>
+            <div className="font-bold">👨‍👩‍👧 {t("Who is with you?")}</div>
             <p className="mt-0.5 text-xs text-muted">
-              This changes what we arrange if the vehicle cannot be fixed tonight.
+              {t("This changes what we arrange if the vehicle cannot be fixed tonight.")}
             </p>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="label">Your name</label>
-                <input className="input" placeholder="Name" value={customerName}
+                <label className="label">{t("Your name")}</label>
+                <input className="input" placeholder={t("Name")} value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)} />
               </div>
               <div>
-                <label className="label">Phone *</label>
+                <label className="label">{t("Phone")} *</label>
                 <input className="input" placeholder="+91 …" value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)} />
               </div>
               <div>
-                <label className="label">People in the vehicle</label>
+                <label className="label">{t("People in the vehicle")}</label>
                 <input className="input" type="number" min={1} max={12} value={passengers}
                   onChange={(e) => setPassengers(Number(e.target.value))} />
               </div>
               <div>
-                <label className="label">Guardian phone (live link)</label>
-                <input className="input" placeholder="Someone at home" value={guardianPhone}
+                <label className="label">{t("Guardian phone (live link)")}</label>
+                <input className="input" placeholder={t("Someone at home")} value={guardianPhone}
                   onChange={(e) => setGuardianPhone(e.target.value)} />
               </div>
             </div>
@@ -554,23 +552,23 @@ export default function SosPage() {
               <input type="checkbox" checked={hasChildren}
                 onChange={(e) => setHasChildren(e.target.checked)}
                 className="h-4 w-4 accent-amber" />
-              <span className="text-sm">Children or elderly travelling with me</span>
+              <span className="text-sm">{t("Children or elderly travelling with me")}</span>
             </label>
           </div>
 
           {error && (
             <div className="rounded-xl border border-sos/50 bg-sos/10 px-4 py-3 text-sm text-sos">
-              {error}
+              {t(error)}
             </div>
           )}
 
           <button onClick={submit} disabled={submitting} className="btn-sos w-full py-4 text-base">
-            {submitting ? "Dispatching…" : "🚨 Send SOS and dispatch a mechanic"}
+            {submitting ? t("Dispatching…") : `🚨 ${t("Send SOS and dispatch a mechanic")}`}
           </button>
 
           <p className="text-center text-xs text-muted">
-            Life-threatening emergency? Call <span className="font-semibold text-white">112</span> first.{" "}
-            <Link href="/how" className="text-amber underline">No signal? Use SMS.</Link>
+            {t("Life-threatening emergency? Call 112 first.")}{" "}
+            <Link href="/how" className="text-amber underline">{t("No signal? Use SMS.")}</Link>
           </p>
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
 import { DemoPartnerChip, StatusPill } from "@/components/ui";
+import { useT } from "@/lib/i18n";
 import type { LatLng, PlanBOption, RequestStatus, Severity, TimelineEvent } from "@/lib/types";
 
 interface GuardianView {
@@ -28,6 +29,7 @@ interface GuardianView {
 }
 
 export default function GuardianPage({ params }: { params: { token: string } }) {
+  const t = useT();
   const [v, setV] = useState<GuardianView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,43 +54,43 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
   const markers = useMemo<MapMarker[]>(() => {
     if (!v) return [];
     const list: MapMarker[] = [
-      { id: "them", position: v.location, kind: "incident", title: `${v.customerName} is here`, subtitle: v.highwayRef },
+      { id: "them", position: v.location, kind: "incident", title: t("{name} is here", { name: v.customerName }), subtitle: v.highwayRef },
     ];
     if (v.mechanic) {
       list.push({
         id: "mech", position: v.mechanic.location, kind: "mechanic",
-        title: v.mechanic.name, subtitle: `${v.mechanic.shopName} · ${v.etaMinutes} min away`,
+        title: v.mechanic.name, subtitle: `${v.mechanic.shopName} · ${t("{n} min away", { n: v.etaMinutes ?? "—" })}`,
       });
     }
     return list;
-  }, [v]);
+  }, [v, t]);
 
   if (error) {
     return (
       <main className="mx-auto max-w-lg px-4 py-24 text-center">
         <div className="text-5xl">🔗</div>
-        <h1 className="mt-4 text-xl font-bold">{error}</h1>
+        <h1 className="mt-4 text-xl font-bold">{t(error)}</h1>
         <p className="mt-2 text-sm text-muted">
-          Guardian links expire once the trip is closed.
+          {t("Guardian links expire once the trip is closed.")}
         </p>
       </main>
     );
   }
 
   if (!v) {
-    return <main className="px-4 py-24 text-center text-muted">Loading…</main>;
+    return <main className="px-4 py-24 text-center text-muted">{t("Loading…")}</main>;
   }
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <div className="card-pad border-safe/30 bg-safe/[0.04] text-center">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-safe">Guardian view</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-safe">{t("Guardian view")}</div>
         <h1 className="mt-2 text-2xl font-extrabold">
-          {v.customerName} has help on the way
+          {t("{name} has help on the way", { name: v.customerName })}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          {v.passengers} {v.passengers === 1 ? "person" : "people"}
-          {v.hasChildren && " including children"} · {v.highwayRef}
+          {t(v.passengers === 1 ? "{n} person" : "{n} people", { n: v.passengers })}
+          {v.hasChildren && ` ${t("including children")}`} · {v.highwayRef}
         </p>
         <div className="mt-3 flex justify-center"><StatusPill status={v.status} /></div>
       </div>
@@ -101,11 +103,11 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
         <div className="card-pad mt-5 border-amber/30">
           <div className="flex items-center justify-between">
             <div className="text-[10px] uppercase tracking-wider text-muted">
-              Who is coming
+              {t("Who is coming")}
             </div>
             <div className="text-right">
               <div className="text-2xl font-extrabold leading-none text-amber">{v.etaMinutes}</div>
-              <div className="text-[10px] uppercase text-muted">min</div>
+              <div className="text-[10px] uppercase text-muted">{t("min")}</div>
             </div>
           </div>
 
@@ -116,7 +118,7 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
                 <span className="font-bold">{v.mechanic.name}</span>
                 <DemoPartnerChip />
                 {v.mechanic.verified && (
-                  <span className="chip border-safe/40 bg-safe/10 text-safe">✓ ID verified</span>
+                  <span className="chip border-safe/40 bg-safe/10 text-safe">✓ {t("ID verified")}</span>
                 )}
               </div>
               <div className="text-sm text-muted">{v.mechanic.shopName} · ★ {v.mechanic.rating}</div>
@@ -125,17 +127,17 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
 
           <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
             <div className="stat">
-              <div className="text-[10px] uppercase text-muted">Arriving on</div>
+              <div className="text-[10px] uppercase text-muted">{t("Arriving on")}</div>
               <div className="font-bold">{v.mechanic.arrivalVehicle}</div>
             </div>
             <div className="stat">
-              <div className="text-[10px] uppercase text-muted">Plate number</div>
+              <div className="text-[10px] uppercase text-muted">{t("Plate number")}</div>
               <div className="font-bold">{v.mechanic.plateNumber}</div>
             </div>
           </div>
 
           <a href={`tel:${v.mechanic.phone.replace(/\s/g, "")}`} className="btn-ghost mt-3 w-full">
-            📞 Call the mechanic directly
+            📞 {t("Call the mechanic directly")}
           </a>
 
           <div className={`mt-3 rounded-xl border px-3.5 py-2.5 text-xs font-semibold ${
@@ -144,15 +146,15 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
               : "border-edge bg-panel2 text-muted"
           }`}>
             {v.otpVerified
-              ? "✅ Identity confirmed on site — the correct arrival code was entered"
-              : "⏳ Not yet on site. Identity will be confirmed by a 4 digit code."}
+              ? `✅ ${t("Identity confirmed on site — the correct arrival code was entered")}`
+              : `⏳ ${t("Not yet on site. Identity will be confirmed by a 4 digit code.")}`}
           </div>
         </div>
       ) : (
         <div className="card-pad mt-5 text-center">
-          <div className="font-bold">Finding the nearest mechanic</div>
+          <div className="font-bold">{t("Finding the nearest mechanic")}</div>
           <div className="mt-1 text-xs text-muted">
-            Problem reported: {v.fault}
+            {t("Problem reported")}: {v.fault}
           </div>
         </div>
       )}
@@ -160,10 +162,10 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
       {v.planB && (
         <div className="card-pad mt-5 border-purple-400/30 bg-purple-400/[0.04]">
           <div className="text-[10px] uppercase tracking-wider text-purple-300">
-            Plan B in progress
+            {t("Plan B in progress")}
           </div>
           <p className="mt-1 text-sm text-muted">
-            The vehicle cannot be repaired tonight, so onward travel is being arranged.
+            {t("The vehicle cannot be repaired tonight, so onward travel is being arranged.")}
           </p>
           <ul className="mt-3 space-y-2">
             {v.planB.map((o) => (
@@ -177,7 +179,7 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
       )}
 
       <div className="card-pad mt-5">
-        <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">Live updates</div>
+        <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">{t("Live updates")}</div>
         <ol className="space-y-2.5">
           {[...v.timeline].reverse().map((e, i) => (
             <li key={`${e.at}-${i}`} className="flex gap-3 text-sm">
@@ -193,7 +195,7 @@ export default function GuardianPage({ params }: { params: { token: string } }) 
       </div>
 
       <p className="mt-6 text-center text-xs text-muted">
-        This page updates on its own. You do not need the app installed.
+        {t("This page updates on its own. You do not need the app installed.")}
       </p>
     </main>
   );

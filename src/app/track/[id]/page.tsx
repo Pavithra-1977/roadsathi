@@ -6,9 +6,11 @@ import Map, { type MapMarker } from "@/components/Map";
 import { DemoPartnerChip, Rupees, SeverityBadge, SourceBadge, StatusPill } from "@/components/ui";
 import WhyDiagnosis from "@/components/WhyDiagnosis";
 import { partName } from "@/lib/knowledgeBase";
+import { useT } from "@/lib/i18n";
 import type { AssistanceRequest, DataSources, LatLng, OsmPlace } from "@/lib/types";
 
 export default function TrackPage({ params }: { params: { id: string } }) {
+  const t = useT();
   const [req, setReq] = useState<AssistanceRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -39,35 +41,35 @@ export default function TrackPage({ params }: { params: { id: string } }) {
   const markers = useMemo<MapMarker[]>(() => {
     if (!req) return [];
     const list: MapMarker[] = [
-      { id: "incident", position: req.location, kind: "incident", title: "Your vehicle", subtitle: req.highwayRef },
+      { id: "incident", position: req.location, kind: "incident", title: t("Your vehicle"), subtitle: req.highwayRef },
     ];
     if (req.mechanic) {
       list.push({
         id: "mech", position: req.mechanic.location, kind: "mechanic",
-        title: req.mechanic.name, subtitle: `${req.mechanic.shopName} · ETA ${req.etaMinutes} min`,
+        title: req.mechanic.name, subtitle: `${req.mechanic.shopName} · ${t("ETA")} ${t("{n} min", { n: req.etaMinutes ?? "—" })}`,
       });
     }
     for (const p of req.partsPlan?.pickups ?? []) {
       list.push({
         id: p.shopId, position: p.location, kind: "shop",
-        title: p.shopName, subtitle: `Collecting: ${p.parts.map(partName).join(", ")}`,
+        title: p.shopName, subtitle: `${t("Collecting")}: ${p.parts.map(partName).join(", ")}`,
       });
     }
-    const osm = "Listed on OpenStreetMap, not a RoadSathi partner";
+    const osm = t("Listed on OpenStreetMap, not a RoadSathi partner");
     for (const [i, g] of (req.nearby?.garages ?? []).slice(0, 3).entries()) {
       list.push({ id: `osm-g${i}`, position: g, kind: "garage", title: g.name, subtitle: `${g.distanceKm} km · ${osm}` });
     }
     const hospital = req.nearby?.hospitals[0];
-    if (hospital) list.push({ id: "osm-h", position: hospital, kind: "hospital", title: hospital.name, subtitle: `${hospital.distanceKm} km · nearest hospital` });
+    if (hospital) list.push({ id: "osm-h", position: hospital, kind: "hospital", title: hospital.name, subtitle: `${hospital.distanceKm} km · ${t("nearest hospital")}` });
     const police = req.nearby?.police[0];
-    if (police) list.push({ id: "osm-p", position: police, kind: "police", title: police.name, subtitle: `${police.distanceKm} km · nearest police` });
+    if (police) list.push({ id: "osm-p", position: police, kind: "police", title: police.name, subtitle: `${police.distanceKm} km · ${t("nearest police")}` });
     for (const o of req.planB ?? []) {
       if (o.location) {
         list.push({ id: o.title, position: o.location, kind: "safe", title: o.title, subtitle: o.detail.slice(0, 80) });
       }
     }
     return list;
-  }, [req]);
+  }, [req, t]);
 
   // Real road geometry, but only if it is live and for the mechanic who accepted.
   // Otherwise the dashed straight line below is drawn, as before.
@@ -94,12 +96,11 @@ export default function TrackPage({ params }: { params: { id: string } }) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <div className="text-5xl">🤔</div>
-        <h1 className="mt-4 text-2xl font-bold">{error}</h1>
+        <h1 className="mt-4 text-2xl font-bold">{t(error)}</h1>
         <p className="mt-2 text-sm text-muted">
-          In-memory demo mode resets when the serverless function goes cold. Connect
-          Supabase for requests that survive.
+          {t("In-memory demo mode resets when the serverless function goes cold. Connect Supabase for requests that survive.")}
         </p>
-        <Link href="/sos" className="btn-primary mt-6">Raise a new SOS</Link>
+        <Link href="/sos" className="btn-primary mt-6">{t("Raise a new SOS")}</Link>
       </main>
     );
   }
@@ -107,7 +108,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
   if (!req) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-24 text-center text-muted">
-        Loading your request…
+        {t("Loading your request…")}
       </main>
     );
   }
@@ -125,11 +126,11 @@ export default function TrackPage({ params }: { params: { id: string } }) {
           </div>
           <p className="mt-1 text-sm text-muted">
             {req.highwayRef} <SourceBadge source={req.sources?.geocode} label="OSM Nominatim" /> · {req.vehicleModel} {req.vehiclePlate && `· ${req.vehiclePlate}`} ·{" "}
-            {req.passengers} {req.passengers === 1 ? "person" : "people"}
-            {req.hasChildren && " (children on board)"}
+            {t(req.passengers === 1 ? "{n} person" : "{n} people", { n: req.passengers })}
+            {req.hasChildren && ` (${t("children on board")})`}
           </p>
         </div>
-        <a href="tel:112" className="btn-sos">📞 Emergency 112</a>
+        <a href="tel:112" className="btn-sos">📞 {t("Emergency")} 112</a>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
@@ -140,14 +141,14 @@ export default function TrackPage({ params }: { params: { id: string } }) {
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted">
               {path && req.route ? (
                 <>
-                  <span>Road route {req.route.distanceKm} km · ~{req.route.etaMinutes} min</span>
+                  <span>{t("Road route")} {req.route.distanceKm} km · ~{t("{n} min", { n: req.route.etaMinutes })}</span>
                   <SourceBadge source={req.sources?.route} label="OSRM" />
                 </>
               ) : req.mechanic ? (
-                <span>Straight-line estimate (no road route for this mechanic)</span>
+                <span>{t("Straight-line estimate (no road route for this mechanic)")}</span>
               ) : null}
               {req.nearby && (
-                <span className="ml-auto">🔩 OSM garage · 🏥 hospital · 🚓 police</span>
+                <span className="ml-auto">🔩 {t("OSM garage")} · 🏥 {t("hospital")} · 🚓 {t("police")}</span>
               )}
             </div>
           </div>
@@ -157,13 +158,13 @@ export default function TrackPage({ params }: { params: { id: string } }) {
             <div className="card-pad border-amber/30">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-[10px] uppercase tracking-wider text-muted">
-                  Your mechanic
+                  {t("Your mechanic")}
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-extrabold leading-none text-amber">
                     {req.etaMinutes}
                   </div>
-                  <div className="text-[10px] uppercase text-muted">min away</div>
+                  <div className="text-[10px] uppercase text-muted">{t("min away")}</div>
                 </div>
               </div>
 
@@ -174,12 +175,12 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                     <span className="text-lg font-bold">{req.mechanic.name}</span>
                     <DemoPartnerChip />
                     {req.mechanic.verified && (
-                      <span className="chip border-safe/40 bg-safe/10 text-safe">✓ ID verified</span>
+                      <span className="chip border-safe/40 bg-safe/10 text-safe">✓ {t("ID verified")}</span>
                     )}
                   </div>
                   <div className="text-sm text-muted">{req.mechanic.shopName}</div>
                   <div className="text-xs text-muted">
-                    ★ {req.mechanic.rating} · {req.mechanic.jobsCompleted} jobs ·{" "}
+                    ★ {req.mechanic.rating} · {t("{n} jobs", { n: req.mechanic.jobsCompleted })} ·{" "}
                     {req.mechanic.arrivalVehicle} · {req.mechanic.plateNumber}
                   </div>
                 </div>
@@ -187,11 +188,11 @@ export default function TrackPage({ params }: { params: { id: string } }) {
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <a href={`tel:${req.mechanic.phone.replace(/\s/g, "")}`} className="btn-ghost">
-                  📞 Call {req.mechanic.name.split(" ")[0]}
+                  📞 {t("Call {name}", { name: req.mechanic.name.split(" ")[0] })}
                 </a>
                 <div className="rounded-xl border border-amber/40 bg-amber/10 px-4 py-2.5 text-center">
                   <div className="text-[10px] uppercase tracking-wider text-muted">
-                    {req.otpVerified ? "Arrival verified" : "Arrival code"}
+                    {t(req.otpVerified ? "Arrival verified" : "Arrival code")}
                   </div>
                   <div className="text-xl font-extrabold tracking-[0.35em] text-amber">
                     {req.otpVerified ? "✓ ✓ ✓ ✓" : req.otp}
@@ -201,9 +202,8 @@ export default function TrackPage({ params }: { params: { id: string } }) {
 
               {!req.otpVerified && (
                 <p className="mt-3 rounded-xl border border-edge bg-panel2 px-3.5 py-2.5 text-xs leading-relaxed text-muted">
-                  <span className="font-semibold text-white">Read this code aloud only when they reach you.</span>{" "}
-                  Work cannot start until they enter it. If the person who arrives cannot
-                  produce the app, do not hand over your keys — call {req.mechanic.name.split(" ")[0]} on the number above.
+                  <span className="font-semibold text-white">{t("Read this code aloud only when they reach you.")}</span>{" "}
+                  {t("Work cannot start until they enter it. If the person who arrives cannot produce the app, do not hand over your keys — call {name} on the number above.", { name: req.mechanic.name.split(" ")[0] })}
                 </p>
               )}
             </div>
@@ -215,16 +215,16 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                   <span className="relative inline-flex h-3 w-3 rounded-full bg-sos" />
                 </span>
                 <div>
-                  <div className="font-bold">Broadcasting to nearby mechanics</div>
+                  <div className="font-bold">{t("Broadcasting to nearby mechanics")}</div>
                   <div className="text-xs text-muted">
-                    Typically accepted within 60 seconds. Estimated arrival {req.etaMinutes} min.
+                    {t("Typically accepted within 60 seconds. Estimated arrival {n} min.", { n: req.etaMinutes ?? "—" })}
                   </div>
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted">
-                Demo tip: open the{" "}
-                <Link href="/mechanic" className="text-amber underline">mechanic dashboard</Link>{" "}
-                in another tab and accept this job.
+                {t("Demo tip: open the")}{" "}
+                <Link href="/mechanic" className="text-amber underline">{t("mechanic dashboard")}</Link>{" "}
+                {t("in another tab and accept this job.")}
               </p>
             </div>
           )}
@@ -234,7 +234,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
             <div className="card-pad">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted">
-                  Parts pickup route · +{req.partsPlan.totalDetourKm} km detour
+                  {t("Parts pickup route")} · +{req.partsPlan.totalDetourKm} km {t("detour")}
                 </div>
                 <DemoPartnerChip />
               </div>
@@ -251,15 +251,15 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                       </div>
                     </div>
                     <span className={`chip shrink-0 ${p.openNow ? "border-safe/40 text-safe" : "border-sos/40 text-sos"}`}>
-                      {p.openNow ? "Open" : "Closed"}
+                      {t(p.openNow ? "Open" : "Closed")}
                     </span>
                   </div>
                 ))}
               </div>
               {req.partsPlan.unavailable.length > 0 && (
                 <p className="mt-3 text-xs text-sos">
-                  Not in stock nearby: {req.partsPlan.unavailable.map(partName).join(", ")}. The
-                  mechanic will assess whether a temporary fix is safe.
+                  {t("Not in stock nearby")}: {req.partsPlan.unavailable.map(partName).join(", ")}.{" "}
+                  {t("The mechanic will assess whether a temporary fix is safe.")}
                 </p>
               )}
             </div>
@@ -269,10 +269,10 @@ export default function TrackPage({ params }: { params: { id: string } }) {
           {req.planB ? (
             <div className="card-pad border-purple-400/30 bg-purple-400/[0.04]">
               <div className="text-[10px] uppercase tracking-wider text-purple-300">
-                Plan B · getting you home safely
+                {t("Plan B · getting you home safely")}
               </div>
               <h3 className="mt-1 text-lg font-bold">
-                The vehicle is not going anywhere tonight. You are.
+                {t("The vehicle is not going anywhere tonight. You are.")}
               </h3>
               <div className="mt-4 space-y-3">
                 {req.planB.map((o) => (
@@ -285,8 +285,8 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                     </div>
                     <p className="mt-1 text-xs leading-relaxed text-muted">{o.detail}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {typeof o.distanceKm === "number" && <span className="chip">{o.distanceKm} km away</span>}
-                      {typeof o.etaMinutes === "number" && <span className="chip">{o.etaMinutes} min</span>}
+                      {typeof o.distanceKm === "number" && <span className="chip">{t("{n} km away", { n: o.distanceKm })}</span>}
+                      {typeof o.etaMinutes === "number" && <span className="chip">{t("{n} min", { n: o.etaMinutes })}</span>}
                       {o.contact && <span className="chip">{o.contact}</span>}
                     </div>
                   </div>
@@ -296,7 +296,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
           ) : (
             req.status !== "resolved" && (
               <button onClick={engagePlanB} className="btn-ghost w-full border-purple-400/40 py-3.5 text-purple-200">
-                🛡️ It cannot be fixed — arrange safe onward travel and vehicle custody
+                🛡️ {t("It cannot be fixed — arrange safe onward travel and vehicle custody")}
               </button>
             )
           )}
@@ -309,19 +309,19 @@ export default function TrackPage({ params }: { params: { id: string } }) {
           {req.triage && (
             <div className="card-pad">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-[10px] uppercase tracking-wider text-muted">Diagnosis</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted">{t("Diagnosis")}</div>
                 <SeverityBadge severity={req.triage.severity} />
               </div>
               <div className="mt-2 text-xl font-extrabold">{req.triage.faultLabel}</div>
               <div className="mt-1 text-xs text-muted">
-                {Math.round(req.triage.confidence * 100)}% confidence ·{" "}
-                {req.triage.agent?.source === "llm+rag" ? "AI (LLM + RAG)" : "knowledge base"}
+                {t("{n}% confidence", { n: Math.round(req.triage.confidence * 100) })} ·{" "}
+                {t(req.triage.agent?.source === "llm+rag" ? "AI (LLM + RAG)" : "knowledge base")}
               </div>
               <p className="mt-3 text-xs leading-relaxed text-muted">&quot;{req.symptomText}&quot;</p>
 
               <div className="mt-4">
                 <div className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">
-                  Stay safe while you wait
+                  {t("Stay safe while you wait")}
                 </div>
                 <ul className="space-y-1.5">
                   {req.triage.safetyAdvice.map((a) => (
@@ -334,7 +334,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
 
               {req.triage.needsClarification && req.triage.clarifyingQuestion && (
                 <p className="mt-4 rounded-xl border border-blue-400/30 bg-blue-400/[0.06] px-3.5 py-2.5 text-xs leading-relaxed">
-                  <span className="font-semibold text-blue-300">The mechanic will likely ask:</span>{" "}
+                  <span className="font-semibold text-blue-300">{t("The mechanic will likely ask:")}</span>{" "}
                   {req.triage.clarifyingQuestion}
                 </p>
               )}
@@ -349,27 +349,25 @@ export default function TrackPage({ params }: { params: { id: string } }) {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-muted">
-                    Locked price
+                    {t("Locked price")}
                   </div>
                   <div className="text-2xl font-extrabold text-safe">
                     <Rupees amount={req.quotedPriceInr} />
                   </div>
                 </div>
-                <span className="chip border-safe/40 text-safe">🔒 No surge</span>
+                <span className="chip border-safe/40 text-safe">🔒 {t("No surge")}</span>
               </div>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                Frozen before the mechanic was dispatched. Parts are billed at actual cost
-                with the shop receipt attached. Nothing above this without your approval.
+                {t("Frozen before the mechanic was dispatched. Parts are billed at actual cost with the shop receipt attached. Nothing above this without your approval.")}
               </p>
             </div>
           )}
 
           {/* guardian */}
           <div className="card-pad border-safe/25">
-            <div className="text-[10px] uppercase tracking-wider text-muted">Guardian Link</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted">{t("Guardian Link")}</div>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Share this with someone at home. They see the mechanic&apos;s identity, plate
-              number and live ETA — without needing the app.
+              {t("Share this with someone at home. They see the mechanic's identity, plate number and live ETA — without needing the app.")}
             </p>
             <div className="mt-3 flex gap-2">
               <input readOnly value={guardianUrl} className="input flex-1 text-xs" />
@@ -377,11 +375,11 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                 onClick={() => { navigator.clipboard.writeText(guardianUrl); setCopied(true); setTimeout(() => setCopied(false), 1800); }}
                 className="btn-safe shrink-0"
               >
-                {copied ? "Copied" : "Copy"}
+                {t(copied ? "Copied" : "Copy")}
               </button>
             </div>
             <Link href={`/guardian/${req.guardianToken}`} className="mt-2 inline-block text-xs text-amber underline">
-              Preview the guardian view →
+              {t("Preview the guardian view")} →
             </Link>
           </div>
 
@@ -391,7 +389,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
 
           {/* timeline */}
           <div className="card-pad">
-            <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">Timeline</div>
+            <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">{t("Timeline")}</div>
             <ol className="space-y-3">
               {[...req.timeline].reverse().map((e, i) => (
                 <li key={`${e.at}-${i}`} className="flex gap-3">
@@ -418,10 +416,11 @@ export default function TrackPage({ params }: { params: { id: string } }) {
 
 function Conditions({ req }: { req: AssistanceRequest }) {
   const w = req.weather;
+  const t = useT();
   return (
     <div className="card-pad">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] uppercase tracking-wider text-muted">Conditions here now</div>
+        <div className="text-[10px] uppercase tracking-wider text-muted">{t("Conditions here now")}</div>
         <SourceBadge source={req.sources?.weather} label="Open-Meteo" />
       </div>
       {w ? (
@@ -445,7 +444,7 @@ function Conditions({ req }: { req: AssistanceRequest }) {
           )}
         </>
       ) : (
-        <p className="mt-2 text-xs text-muted">Live weather unavailable right now.</p>
+        <p className="mt-2 text-xs text-muted">{t("Live weather unavailable right now.")}</p>
       )}
     </div>
   );
@@ -456,18 +455,19 @@ function directionsUrl(from: LatLng, to: LatLng) {
 }
 
 function PlaceRow({ icon, place, from }: { icon: string; place: OsmPlace; from: LatLng }) {
+  const t = useT();
   return (
     <div className="flex items-start gap-3 rounded-xl border border-edge bg-panel2 p-3">
       <span className="text-lg leading-none">{icon}</span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{place.name}</div>
-        <div className="text-[11px] text-muted">{place.distanceKm} km straight-line</div>
+        <div className="text-[11px] text-muted">{place.distanceKm} km {t("straight-line")}</div>
         <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
           {place.phone && (
-            <a href={`tel:${place.phone.replace(/[^\d+]/g, "")}`} className="text-amber underline">📞 Call</a>
+            <a href={`tel:${place.phone.replace(/[^\d+]/g, "")}`} className="text-amber underline">📞 {t("Call")}</a>
           )}
           <a href={directionsUrl(from, place)} target="_blank" rel="noreferrer" className="text-amber underline">
-            🧭 Directions
+            🧭 {t("Directions")}
           </a>
         </div>
       </div>
@@ -477,6 +477,7 @@ function PlaceRow({ icon, place, from }: { icon: string; place: OsmPlace; from: 
 
 function NearbyPanel({ req }: { req: AssistanceRequest }) {
   const n = req.nearby;
+  const t = useT();
   const firsts = n
     ? ([
         ["🏥", n.hospitals[0]], ["🚓", n.police[0]], ["⛽", n.fuel[0]],
@@ -486,15 +487,14 @@ function NearbyPanel({ req }: { req: AssistanceRequest }) {
   return (
     <div className="card-pad">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] uppercase tracking-wider text-muted">Real places nearby</div>
+        <div className="text-[10px] uppercase tracking-wider text-muted">{t("Real places nearby")}</div>
         <SourceBadge source={req.sources?.osm} label="OSM" />
       </div>
       {n && (n.garages.length > 0 || firsts.length > 0) ? (
         <div className="mt-3 space-y-2">
           {n.garages.length > 0 && (
             <p className="text-[11px] leading-relaxed text-muted">
-              Garages below are listed on OpenStreetMap, not RoadSathi partners. They have not
-              agreed to anything; call them yourself if you want a second option.
+              {t("Garages below are listed on OpenStreetMap, not RoadSathi partners. They have not agreed to anything; call them yourself if you want a second option.")}
             </p>
           )}
           {n.garages.slice(0, 3).map((g, i) => (
@@ -506,7 +506,7 @@ function NearbyPanel({ req }: { req: AssistanceRequest }) {
         </div>
       ) : (
         <p className="mt-2 text-xs text-muted">
-          OpenStreetMap lookup unavailable right now. In an emergency dial 112.
+          {t("OpenStreetMap lookup unavailable right now. In an emergency dial 112.")}
         </p>
       )}
     </div>
@@ -514,6 +514,7 @@ function NearbyPanel({ req }: { req: AssistanceRequest }) {
 }
 
 function DataSourcesPanel({ sources }: { sources: DataSources }) {
+  const t = useT();
   const rows: [string, keyof DataSources, string][] = [
     ["Road & place", "geocode", "OSM Nominatim"],
     ["Weather", "weather", "Open-Meteo"],
@@ -522,22 +523,21 @@ function DataSourcesPanel({ sources }: { sources: DataSources }) {
   ];
   return (
     <div className="card-pad">
-      <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">Data sources</div>
+      <div className="mb-3 text-[10px] uppercase tracking-wider text-muted">{t("Data sources")}</div>
       <ul className="space-y-1.5 text-xs">
         {rows.map(([label, key, name]) => (
           <li key={key} className="flex items-center justify-between gap-2">
-            <span>{label}</span>
+            <span>{t(label)}</span>
             <SourceBadge source={sources[key]} label={name} />
           </li>
         ))}
         <li className="flex items-center justify-between gap-2">
-          <span>Mechanics, parts inventory, pricing</span>
+          <span>{t("Mechanics, parts inventory, pricing")}</span>
           <DemoPartnerChip />
         </li>
       </ul>
       <p className="mt-3 text-[11px] leading-relaxed text-muted">
-        Fallback means the free public source did not answer in time, so seeded demo data or a
-        straight-line estimate is shown instead. Map data © OpenStreetMap contributors.
+        {t("Fallback means the free public source did not answer in time, so seeded demo data or a straight-line estimate is shown instead. Map data © OpenStreetMap contributors.")}
       </p>
     </div>
   );

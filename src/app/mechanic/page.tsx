@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Rupees, SeverityBadge, StatusPill } from "@/components/ui";
 import { partName } from "@/lib/knowledgeBase";
+import { useT } from "@/lib/i18n";
 import type { AssistanceRequest } from "@/lib/types";
 
 /**
@@ -23,6 +24,7 @@ const ME = [
 ];
 
 export default function MechanicPage() {
+  const t = useT();
   const [me, setMe] = useState(ME[0].id);
   const [rows, setRows] = useState<AssistanceRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -91,13 +93,13 @@ export default function MechanicPage() {
     <main className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Mechanic dashboard</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">{t("Mechanic dashboard")}</h1>
           <p className="mt-1 text-sm text-muted">
-            Jobs on your stretch of highway right now. Accepting one locks it to you.
+            {t("Jobs on your stretch of highway right now. Accepting one locks it to you.")}
           </p>
         </div>
         <div>
-          <label className="label">Signed in as (demo)</label>
+          <label className="label">{t("Signed in as (demo)")}</label>
           <select className="input min-w-[260px]" value={me} onChange={(e) => setMe(e.target.value)}>
             {ME.map((m) => (
               <option key={m.id} value={m.id}>{m.name} — {m.shop}</option>
@@ -108,35 +110,35 @@ export default function MechanicPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="stat">
-          <div className="text-[10px] uppercase tracking-wider text-muted">Open nearby</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("Open nearby")}</div>
           <div className="text-2xl font-extrabold text-sos">{openJobs.length}</div>
         </div>
         <div className="stat">
-          <div className="text-[10px] uppercase tracking-wider text-muted">Your active jobs</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("Your active jobs")}</div>
           <div className="text-2xl font-extrabold text-amber">{mine.length}</div>
         </div>
         <div className="stat">
-          <div className="text-[10px] uppercase tracking-wider text-muted">Value in hand</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("Value in hand")}</div>
           <div className="text-2xl font-extrabold text-safe"><Rupees amount={earnings} /></div>
         </div>
         <div className="stat">
-          <div className="text-[10px] uppercase tracking-wider text-muted">Status</div>
-          <div className="mt-1 text-sm font-bold text-safe">🟢 Online</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">{t("Status")}</div>
+          <div className="mt-1 text-sm font-bold text-safe">🟢 {t("Online")}</div>
         </div>
       </div>
 
       {msg && (
-        <div className="mb-4 rounded-xl border border-sos/50 bg-sos/10 px-4 py-3 text-sm text-sos">{msg}</div>
+        <div className="mb-4 rounded-xl border border-sos/50 bg-sos/10 px-4 py-3 text-sm text-sos">{t(msg)}</div>
       )}
 
       {rows.length === 0 ? (
         <div className="card-pad text-center">
           <div className="text-4xl">🌙</div>
-          <div className="mt-3 font-bold">Quiet on the highway</div>
+          <div className="mt-3 font-bold">{t("Quiet on the highway")}</div>
           <p className="mt-1 text-sm text-muted">
-            No active requests.{" "}
-            <Link href="/sos" className="text-amber underline">Raise an SOS</Link> in another
-            tab and it will appear here within four seconds.
+            {t("No active requests.")}{" "}
+            <Link href="/sos" className="text-amber underline">{t("Raise an SOS")}</Link>{" "}
+            {t("in another tab and it will appear here within four seconds.")}
           </p>
         </div>
       ) : (
@@ -157,11 +159,11 @@ export default function MechanicPage() {
                 </div>
 
                 <div className="mt-3 text-lg font-bold">
-                  {r.triage?.faultLabel ?? "Needs inspection"}
+                  {r.triage?.faultLabel ?? t("Needs inspection")}
                 </div>
                 <div className="text-xs text-muted">
                   {r.highwayRef} · {r.vehicleModel} ({r.vehicleType}) {r.vehiclePlate} ·{" "}
-                  {r.passengers} on board{r.hasChildren && " · children"}
+                  {t("{n} on board", { n: r.passengers })}{r.hasChildren && ` · ${t("children")}`}
                 </div>
                 <p className="mt-2 rounded-lg border border-edge bg-panel2 px-3 py-2 text-xs italic text-muted">
                   &quot;{r.symptomText}&quot;
@@ -169,17 +171,17 @@ export default function MechanicPage() {
 
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <div className="stat">
-                    <div className="text-[10px] uppercase text-muted">ETA</div>
-                    <div className="font-bold text-amber">{r.etaMinutes ?? "—"} min</div>
+                    <div className="text-[10px] uppercase text-muted">{t("ETA")}</div>
+                    <div className="font-bold text-amber">{t("{n} min", { n: r.etaMinutes ?? "—" })}</div>
                   </div>
                   <div className="stat">
-                    <div className="text-[10px] uppercase text-muted">Job value</div>
+                    <div className="text-[10px] uppercase text-muted">{t("Job value")}</div>
                     <div className="font-bold text-safe">
                       {r.quotedPriceInr ? <Rupees amount={r.quotedPriceInr} /> : "—"}
                     </div>
                   </div>
                   <div className="stat">
-                    <div className="text-[10px] uppercase text-muted">Fix time</div>
+                    <div className="text-[10px] uppercase text-muted">{t("Fix time")}</div>
                     <div className="font-bold">~{r.triage?.estimatedFixMinutes ?? 45}m</div>
                   </div>
                 </div>
@@ -187,15 +189,15 @@ export default function MechanicPage() {
                 {r.triage && (
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     <div>
-                      <div className="mb-1 text-[10px] uppercase tracking-wider text-muted">Bring these tools</div>
+                      <div className="mb-1 text-[10px] uppercase tracking-wider text-muted">{t("Bring these tools")}</div>
                       <div className="flex flex-wrap gap-1">
-                        {r.triage.requiredTools.map((t) => (
-                          <span key={t} className="chip py-0.5 text-[10px]">{t}</span>
+                        {r.triage.requiredTools.map((tool) => (
+                          <span key={tool} className="chip py-0.5 text-[10px]">{tool}</span>
                         ))}
                       </div>
                     </div>
                     <div>
-                      <div className="mb-1 text-[10px] uppercase tracking-wider text-muted">Collect on the way</div>
+                      <div className="mb-1 text-[10px] uppercase tracking-wider text-muted">{t("Collect on the way")}</div>
                       <div className="flex flex-wrap gap-1">
                         {r.partsPlan?.pickups.length
                           ? r.partsPlan.pickups.map((p) => (
@@ -203,7 +205,7 @@ export default function MechanicPage() {
                                 {p.shopName}: {p.parts.map(partName).join(", ")}
                               </span>
                             ))
-                          : <span className="text-[11px] text-muted">Nothing to collect</span>}
+                          : <span className="text-[11px] text-muted">{t("Nothing to collect")}</span>}
                       </div>
                     </div>
                   </div>
@@ -214,21 +216,20 @@ export default function MechanicPage() {
                   {!r.mechanicId && (
                     <button onClick={() => accept(r.id)} disabled={busy === r.id}
                       className="btn-primary w-full py-3">
-                      {busy === r.id ? "Accepting…" : "✋ Accept this job"}
+                      {busy === r.id ? t("Accepting…") : `✋ ${t("Accept this job")}`}
                     </button>
                   )}
 
                   {takenByOther && (
                     <div className="text-center text-xs text-muted">
-                      Taken by {r.mechanic?.name}
+                      {t("Taken by {name}", { name: r.mechanic?.name ?? "" })}
                     </div>
                   )}
 
                   {isMine && r.status === "assigned" && (
                     <div>
                       <div className="mb-2 text-xs text-muted">
-                        On arrival, ask the customer for their 4 digit code. Do not start work
-                        without it.
+                        {t("On arrival, ask the customer for their 4 digit code. Do not start work without it.")}
                       </div>
                       <div className="flex gap-2">
                         <input
@@ -239,7 +240,7 @@ export default function MechanicPage() {
                         />
                         <button onClick={() => verify(r.id)} disabled={busy === r.id}
                           className="btn-primary shrink-0">
-                          Verify arrival
+                          {t("Verify arrival")}
                         </button>
                       </div>
                     </div>
@@ -247,15 +248,15 @@ export default function MechanicPage() {
 
                   {isMine && r.status === "arrived" && (
                     <div className="space-y-2">
-                      <input className="input" placeholder="What did you do? (goes on the customer's receipt)"
+                      <input className="input" placeholder={t("What did you do? (goes on the customer's receipt)")}
                         value={note[r.id] ?? ""}
                         onChange={(e) => setNote((s) => ({ ...s, [r.id]: e.target.value }))} />
                       <div className="grid gap-2 sm:grid-cols-2">
                         <button onClick={() => finish(r.id, "resolved")} disabled={busy === r.id}
-                          className="btn-safe">✅ Fixed — vehicle roadworthy</button>
+                          className="btn-safe">✅ {t("Fixed — vehicle roadworthy")}</button>
                         <button onClick={() => finish(r.id, "plan_b")} disabled={busy === r.id}
                           className="btn-ghost border-purple-400/40 text-purple-200">
-                          🛡️ Cannot fix — engage Plan B
+                          🛡️ {t("Cannot fix — engage Plan B")}
                         </button>
                       </div>
                     </div>
@@ -264,7 +265,7 @@ export default function MechanicPage() {
                   {isMine && (
                     <Link href={`/track/${r.id}`}
                       className="mt-2 block text-center text-xs text-amber underline">
-                      Open the customer view →
+                      {t("Open the customer view")} →
                     </Link>
                   )}
                 </div>

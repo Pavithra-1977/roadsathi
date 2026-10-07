@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import AppShell from "@/components/AppShell";
+import { LanguageProvider } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
-        <AppShell>{children}</AppShell>
+        <LanguageProvider>
+          <AppShell>{children}</AppShell>
+        </LanguageProvider>
       </body>
     </html>
   );

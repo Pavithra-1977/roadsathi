@@ -1,3 +1,6 @@
+"use client";
+
+import { useT } from "@/lib/i18n";
 import type { TriageResult } from "@/lib/types";
 
 const FLAG_TEXT: Record<string, string> = {
@@ -13,22 +16,23 @@ export default function WhyDiagnosis({ triage }: { triage: TriageResult }) {
   const a = triage.agent;
   const ai = a?.source === "llm+rag";
   const notes = (a?.flags ?? []).map((f) => FLAG_TEXT[f]).filter(Boolean);
+  const t = useT();
 
   return (
     <div className="card-pad">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[10px] uppercase tracking-wider text-muted">Why this diagnosis</div>
+        <div className="text-[10px] uppercase tracking-wider text-muted">{t("Why this diagnosis")}</div>
         <div className="flex flex-wrap gap-1.5">
           <span
             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
               ai ? "border-blue-400/40 bg-blue-400/10 text-blue-300" : "border-edge bg-panel2 text-muted"
             }`}
           >
-            {ai ? "AI: LLM + RAG" : "Knowledge base"}
+            {ai ? t("AI: LLM + RAG") : t("Knowledge base")}
           </span>
           {a?.retrieval && (
             <span className="inline-flex items-center rounded-full border border-edge bg-panel2 px-2 py-0.5 text-[10px] text-muted">
-              {a.retrieval === "embedding" ? "Semantic search" : "Keyword search"}
+              {t(a.retrieval === "embedding" ? "Semantic search" : "Keyword search")}
             </span>
           )}
         </div>
@@ -39,14 +43,14 @@ export default function WhyDiagnosis({ triage }: { triage: TriageResult }) {
       {notes.length > 0 && (
         <ul className="mt-2 space-y-1">
           {notes.map((n) => (
-            <li key={n} className="text-[11px] leading-relaxed text-muted">ⓘ {n}</li>
+            <li key={n} className="text-[11px] leading-relaxed text-muted">ⓘ {t(n)}</li>
           ))}
         </ul>
       )}
 
       {triage.planBRecommended && (
         <p className="mt-2 text-[11px] text-purple-300">
-          🛡️ Severe or not roadside-fixable: safe onward travel options are being prepared in parallel.
+          🛡️ {t("Severe or not roadside-fixable: safe onward travel options are being prepared in parallel.")}
         </p>
       )}
 
@@ -59,23 +63,23 @@ export default function WhyDiagnosis({ triage }: { triage: TriageResult }) {
                 {c.chunkId && <code className="shrink-0 text-[10px] text-muted">{c.chunkId}</code>}
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-muted">{c.snippet}</p>
-              <div className="mt-1 text-[10px] text-muted/70">{c.source ?? "RoadSathi guide (self-written)"}</div>
+              <div className="mt-1 text-[10px] text-muted/70">{c.source ?? t("RoadSathi guide (self-written)")}</div>
             </div>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-[11px] text-muted">No specific guide matched this description yet.</p>
+        <p className="mt-3 text-[11px] text-muted">{t("No specific guide matched this description yet.")}</p>
       )}
 
       {a && a.path.length > 1 && (
         <div className="mt-3 text-[10px] text-muted">
-          Path: <code>{a.path.join(" → ")}</code>
+          {t("Path")}: <code>{a.path.join(" → ")}</code>
           {typeof a.ms === "number" && ` · ${a.ms} ms`}
           {a.model && ` · ${a.model}`}
         </div>
       )}
       <p className="mt-2 text-[10px] leading-relaxed text-muted/70">
-        Guidance only. The AI advises on the likely fault; dispatch and price are decided by fixed rules.
+        {t("Guidance only. The AI advises on the likely fault; dispatch and price are decided by fixed rules.")}
       </p>
     </div>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { T } from "@/lib/i18n";
 
 const SCRIPT = [
   {
@@ -68,11 +69,9 @@ const QA = [
 export default function HowPage() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-3xl font-extrabold tracking-tight">Demo script and judge Q&amp;A</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight"><T>Demo script and judge Q&A</T></h1>
       <p className="mt-2 text-sm text-muted">
-        A four minute run that shows every differentiator, in the order that lands best.
-        Have three screens ready: phone on <span className="text-white">/sos</span>, laptop on{" "}
-        <span className="text-white">/mechanic</span>, second window on the Guardian Link.
+        <T>A four minute run that shows every differentiator, in the order that lands best. Have three screens ready: phone on /sos, laptop on /mechanic, second window on the Guardian Link.</T>
       </p>
 
       <section className="mt-8 space-y-3">
@@ -80,30 +79,29 @@ export default function HowPage() {
           <div key={s.t} className="card-pad flex gap-4">
             <div className="shrink-0 font-mono text-sm font-bold text-amber">{s.t}</div>
             <div>
-              <div className="font-bold">{s.title}</div>
-              <p className="mt-1 text-sm leading-relaxed text-muted">{s.body}</p>
+              <div className="font-bold"><T>{s.title}</T></div>
+              <p className="mt-1 text-sm leading-relaxed text-muted"><T>{s.body}</T></p>
             </div>
           </div>
         ))}
       </section>
 
-      <h2 className="mt-12 text-2xl font-bold">Questions judges will ask</h2>
+      <h2 className="mt-12 text-2xl font-bold"><T>Questions judges will ask</T></h2>
       <div className="mt-4 space-y-3">
         {QA.map((x) => (
           <details key={x.q} className="card-pad group">
             <summary className="cursor-pointer list-none font-semibold marker:hidden">
               <span className="mr-2 text-amber transition group-open:rotate-90 inline-block">▸</span>
-              {x.q}
+              <T>{x.q}</T>
             </summary>
-            <p className="mt-2.5 pl-5 text-sm leading-relaxed text-muted">{x.a}</p>
+            <p className="mt-2.5 pl-5 text-sm leading-relaxed text-muted"><T>{x.a}</T></p>
           </details>
         ))}
       </div>
 
-      <h2 className="mt-12 text-2xl font-bold">SMS fallback — test it</h2>
+      <h2 className="mt-12 text-2xl font-bold"><T>SMS fallback — test it</T></h2>
       <p className="mt-2 text-sm text-muted">
-        Run this against your deployed URL to prove a request can be created with no app
-        and no data connection:
+        <T>Run this against your deployed URL to prove a request can be created with no app and no data connection:</T>
       </p>
       <pre className="card-pad mt-3 overflow-x-auto text-xs leading-relaxed text-safe">
 {`curl -X POST https://YOUR-APP.vercel.app/api/sms \\
@@ -113,8 +111,8 @@ export default function HowPage() {
       </pre>
 
       <div className="mt-12 flex flex-wrap gap-3">
-        <Link href="/sos" className="btn-sos px-5 py-3">Raise an SOS</Link>
-        <Link href="/mechanic" className="btn-ghost px-5 py-3">Mechanic dashboard</Link>
+        <Link href="/sos" className="btn-sos px-5 py-3"><T>Raise an SOS</T></Link>
+        <Link href="/mechanic" className="btn-ghost px-5 py-3"><T>Mechanic dashboard</T></Link>
       </div>
     </main>
   );
