@@ -6,7 +6,45 @@
 
 :root {
   color-scheme: dark;
+  --ink: 7 11 20;
+  --panel: 14 21 36;
+  --panel2: 20 29 48;
+  --edge: 30 42 66;
+  --amber: 255 176 32;
+  --sos: 255 59 78;
+  --safe: 34 211 167;
+  --muted: 132 151 184;
 }
+
+/* Authenticated app: light theme, navy text, violet accent (the "amber" token). */
+.app-light {
+  color-scheme: light;
+  --ink: 255 255 255;
+  --panel: 255 255 255;
+  --panel2: 246 247 251;
+  --edge: 226 231 240;
+  --amber: 124 58 237;
+  --sos: 225 29 72;
+  --safe: 5 150 105;
+  --muted: 100 113 140;
+  background: #f5f6fa;
+  color: #0f1b3d;
+}
+.app-light .card,
+.app-light .card-pad { box-shadow: 0 1px 2px rgba(15, 27, 61, 0.05); backdrop-filter: none; }
+.app-light .text-white { color: #0f1b3d; }
+.app-light .btn-sos,
+.app-light .btn-primary,
+.app-light .btn-safe { color: #fff; }
+.app-light .text-blue-300 { color: #2563eb; }
+.app-light .text-purple-200,
+.app-light .text-purple-300 { color: #7e22ce; }
+.app-light .text-orange-300 { color: #c2410c; }
+.app-light .leaflet-tile-pane { filter: none; }
+.app-light .leaflet-container { background: #e8ecf3; }
+.app-light .leaflet-control-attribution { background: rgba(255, 255, 255, 0.85) !important; color: #64718c !important; }
+.app-light .leaflet-popup-content-wrapper,
+.app-light .leaflet-popup-tip { background: #fff; color: #0f1b3d; border-color: #e2e7f0; }
 
 html,
 body {

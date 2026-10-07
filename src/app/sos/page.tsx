@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
 import { DemoPartnerChip, SeverityBadge } from "@/components/ui";
+import { LAST_REQUEST_KEY } from "@/components/AppShell";
+import VoiceAssistant from "@/components/VoiceAssistant";
 import WhyDiagnosis from "@/components/WhyDiagnosis";
 import { partName } from "@/lib/knowledgeBase";
 import type { TriageResult, VehicleType } from "@/lib/types";
@@ -34,8 +36,15 @@ const VEHICLES: { value: VehicleType; label: string }[] = [
   { value: "truck", label: "Truck" },
 ];
 
+const STEPS = [
+  { id: "problem", label: "Problem", short: "Problem" },
+  { id: "location", label: "Location & mechanics", short: "Location" },
+  { id: "details", label: "Details & send", short: "Send" },
+] as const;
+
 export default function SosPage() {
   const router = useRouter();
+  const [step, setStep] = useState<(typeof STEPS)[number]["id"]>("problem");
 
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [locState, setLocState] = useState<"idle" | "locating" | "ok" | "denied">("idle");
@@ -153,6 +162,29 @@ export default function SosPage() {
     }
   }
 
+  /** Voice: put the understood problem in the field, run the existing triage, return facts to read back. */
+  async function voiceTriage(text: string): Promise<string | null> {
+    setSymptomText(text);
+    const res = await fetch("/api/triage", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ symptomText: text, vehicleType, lat: pos?.lat, lng: pos?.lng }),
+    });
+    if (!res.ok) throw new Error("Triage failed. Your words are in the box; you can still send the SOS.");
+    const data = await res.json();
+    const t: TriageResult = data.triage;
+    const c: Candidate[] = data.candidates ?? [];
+    setTriage(t);
+    setCandidates(c);
+    return [
+      `Problem: ${t.faultLabel}. Severity: ${t.severity}.`,
+      `Do this now: ${t.safetyAdvice.slice(0, 2).join(" ")}`,
+      c[0] ? `Nearest mechanic ${c[0].mechanic.name} can reach in about ${c[0].etaMinutes} minutes.` : "",
+      t.roadsideFixable ? "Usually fixable at the roadside." : "Usually not fixable roadside; a Plan B will be arranged.",
+      "Send the SOS to dispatch a mechanic.",
+    ].join(" ");
+  }
+
   async function submit() {
     setError(null);
     if (!pos) return setError("We still need your location before we can send help.");
@@ -174,6 +206,7 @@ export default function SosPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not raise the SOS");
+      try { localStorage.setItem(LAST_REQUEST_KEY, data.request.id); } catch { /* storage blocked */ }
       router.push(`/track/${data.request.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -182,61 +215,44 @@ export default function SosPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold tracking-tight">Raise an SOS</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">Get help</h1>
         <p className="mt-1 text-sm text-muted">
           Two things matter right now: your location, and roughly what is wrong. Everything
           else can wait.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-        {/* ------------------------------------------------------ form */}
-        <div className="min-w-0 space-y-5">
-          {/* location */}
-          <div className="card-pad">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="font-bold">📍 Your location</div>
-                <div className="mt-0.5 text-xs text-muted">
-                  {locState === "locating" && "Getting a GPS fix…"}
-                  {locState === "ok" && pos && `Locked: ${pos.lat}, ${pos.lng}`}
-                  {locState === "denied" && "Location blocked — using a demo point. Edit it below."}
-                  {locState === "idle" && "Waiting…"}
-                </div>
-              </div>
-              <button onClick={locate} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
-                Refresh
-              </button>
-            </div>
+      <div className="mb-6 grid grid-cols-3 gap-2 sm:flex">
+        {STEPS.map((s, i) => (
+          <button
+            key={s.id}
+            onClick={() => setStep(s.id)}
+            className={`flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-2 py-2 text-xs font-semibold transition sm:shrink-0 sm:gap-2 sm:px-4 sm:text-sm ${
+              step === s.id ? "border-amber bg-amber text-white" : "border-edge bg-white text-muted hover:text-white"
+            }`}
+          >
+            <span>{i + 1}</span>
+            <span className="truncate sm:hidden">{s.short}</span>
+            <span className="hidden sm:inline">{s.label}</span>
+          </button>
+        ))}
+      </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Latitude</label>
-                <input
-                  className="input" type="number" step="0.000001"
-                  value={pos?.lat ?? ""}
-                  onChange={(e) => setPos((p) => ({ lat: Number(e.target.value), lng: p?.lng ?? 0 }))}
-                />
-              </div>
-              <div>
-                <label className="label">Longitude</label>
-                <input
-                  className="input" type="number" step="0.000001"
-                  value={pos?.lng ?? ""}
-                  onChange={(e) => setPos((p) => ({ lat: p?.lat ?? 0, lng: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-          </div>
-
+      {step === "problem" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-5">
           {/* problem */}
           <div className="card-pad">
             <div className="font-bold">🔧 What is wrong?</div>
             <p className="mt-0.5 text-xs text-muted">
               Plain words are fine. Hinglish is fine. &quot;Gaadi band ho gayi&quot; works.
             </p>
+
+            <div className="mt-3">
+              <VoiceAssistant onUnderstood={voiceTriage} />
+            </div>
 
             <textarea
               className="input mt-3 min-h-[92px] resize-y"
@@ -282,65 +298,11 @@ export default function SosPage() {
               </div>
             </div>
           </div>
-
-          {/* people */}
-          <div className="card-pad">
-            <div className="font-bold">👨‍👩‍👧 Who is with you?</div>
-            <p className="mt-0.5 text-xs text-muted">
-              This changes what we arrange if the vehicle cannot be fixed tonight.
-            </p>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="label">Your name</label>
-                <input className="input" placeholder="Name" value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Phone *</label>
-                <input className="input" placeholder="+91 …" value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">People in the vehicle</label>
-                <input className="input" type="number" min={1} max={12} value={passengers}
-                  onChange={(e) => setPassengers(Number(e.target.value))} />
-              </div>
-              <div>
-                <label className="label">Guardian phone (live link)</label>
-                <input className="input" placeholder="Someone at home" value={guardianPhone}
-                  onChange={(e) => setGuardianPhone(e.target.value)} />
-              </div>
-            </div>
-
-            <label className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl border border-edge bg-panel2 px-3.5 py-2.5">
-              <input type="checkbox" checked={hasChildren}
-                onChange={(e) => setHasChildren(e.target.checked)}
-                className="h-4 w-4 accent-amber" />
-              <span className="text-sm">Children or elderly travelling with me</span>
-            </label>
+            <button onClick={() => setStep("location")} className="btn-primary w-full">
+              Next: confirm location →
+            </button>
           </div>
-
-          {error && (
-            <div className="rounded-xl border border-sos/50 bg-sos/10 px-4 py-3 text-sm text-sos">
-              {error}
-            </div>
-          )}
-
-          <button onClick={submit} disabled={submitting} className="btn-sos w-full py-4 text-base">
-            {submitting ? "Dispatching…" : "🚨 Send SOS and dispatch a mechanic"}
-          </button>
-
-          <p className="text-center text-xs text-muted">
-            Life-threatening emergency? Call <span className="font-semibold text-white">112</span> first.{" "}
-            <Link href="/how" className="text-amber underline">No signal? Use SMS.</Link>
-          </p>
-        </div>
-
-        {/* ------------------------------------------------------ live panel */}
-        <div className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:self-start">
-          {pos && <Map center={pos} markers={markers} height={300} />}
-
+          <div className="min-w-0 space-y-5">
           {triage ? (
             <div className="card-pad animate-rise">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -468,6 +430,49 @@ export default function SosPage() {
           )}
 
           {triage && <WhyDiagnosis triage={triage} />}
+          </div>
+        </div>
+      )}
+
+      {step === "location" && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-5">
+          {/* location */}
+          <div className="card-pad">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-bold">📍 Your location</div>
+                <div className="mt-0.5 text-xs text-muted">
+                  {locState === "locating" && "Getting a GPS fix…"}
+                  {locState === "ok" && pos && `Locked: ${pos.lat}, ${pos.lng}`}
+                  {locState === "denied" && "Location blocked — using a demo point. Edit it below."}
+                  {locState === "idle" && "Waiting…"}
+                </div>
+              </div>
+              <button onClick={locate} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
+                Refresh
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Latitude</label>
+                <input
+                  className="input" type="number" step="0.000001"
+                  value={pos?.lat ?? ""}
+                  onChange={(e) => setPos((p) => ({ lat: Number(e.target.value), lng: p?.lng ?? 0 }))}
+                />
+              </div>
+              <div>
+                <label className="label">Longitude</label>
+                <input
+                  className="input" type="number" step="0.000001"
+                  value={pos?.lng ?? ""}
+                  onChange={(e) => setPos((p) => ({ lat: p?.lat ?? 0, lng: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+          </div>
 
           {candidates.length > 0 && (
             <div className="card-pad">
@@ -503,8 +508,72 @@ export default function SosPage() {
               </div>
             </div>
           )}
+            <button onClick={() => setStep("details")} className="btn-primary w-full">
+              Next: your details →
+            </button>
+          </div>
+          <div className="min-w-0">
+          {pos && <Map center={pos} markers={markers} height={300} />}
+          </div>
         </div>
-      </div>
+      )}
+
+      {step === "details" && (
+        <div className="mx-auto max-w-2xl space-y-5">
+          {/* people */}
+          <div className="card-pad">
+            <div className="font-bold">👨‍👩‍👧 Who is with you?</div>
+            <p className="mt-0.5 text-xs text-muted">
+              This changes what we arrange if the vehicle cannot be fixed tonight.
+            </p>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="label">Your name</label>
+                <input className="input" placeholder="Name" value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Phone *</label>
+                <input className="input" placeholder="+91 …" value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">People in the vehicle</label>
+                <input className="input" type="number" min={1} max={12} value={passengers}
+                  onChange={(e) => setPassengers(Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="label">Guardian phone (live link)</label>
+                <input className="input" placeholder="Someone at home" value={guardianPhone}
+                  onChange={(e) => setGuardianPhone(e.target.value)} />
+              </div>
+            </div>
+
+            <label className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl border border-edge bg-panel2 px-3.5 py-2.5">
+              <input type="checkbox" checked={hasChildren}
+                onChange={(e) => setHasChildren(e.target.checked)}
+                className="h-4 w-4 accent-amber" />
+              <span className="text-sm">Children or elderly travelling with me</span>
+            </label>
+          </div>
+
+          {error && (
+            <div className="rounded-xl border border-sos/50 bg-sos/10 px-4 py-3 text-sm text-sos">
+              {error}
+            </div>
+          )}
+
+          <button onClick={submit} disabled={submitting} className="btn-sos w-full py-4 text-base">
+            {submitting ? "Dispatching…" : "🚨 Send SOS and dispatch a mechanic"}
+          </button>
+
+          <p className="text-center text-xs text-muted">
+            Life-threatening emergency? Call <span className="font-semibold text-white">112</span> first.{" "}
+            <Link href="/how" className="text-amber underline">No signal? Use SMS.</Link>
+          </p>
+        </div>
+      )}
     </main>
   );
 }

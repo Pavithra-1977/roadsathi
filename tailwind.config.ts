@@ -5,14 +5,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#070B14",
-        panel: "#0E1524",
-        panel2: "#141D30",
-        edge: "#1E2A42",
-        amber: "#FFB020",
-        sos: "#FF3B4E",
-        safe: "#22D3A7",
-        muted: "#8497B8",
+        ink: "rgb(var(--ink) / <alpha-value>)",
+        panel: "rgb(var(--panel) / <alpha-value>)",
+        panel2: "rgb(var(--panel2) / <alpha-value>)",
+        edge: "rgb(var(--edge) / <alpha-value>)",
+        amber: "rgb(var(--amber) / <alpha-value>)",
+        sos: "rgb(var(--sos) / <alpha-value>)",
+        safe: "rgb(var(--safe) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
