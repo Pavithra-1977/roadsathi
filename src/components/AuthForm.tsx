@@ -6,6 +6,14 @@ import { useState } from "react";
 
 export const SESSION_KEY = "rs:session";
 
+export type Role = "customer" | "mechanic";
+
+// Demo only: fixed accounts checked in the browser. Not real authentication.
+const DEMO_ACCOUNTS: { email: string; password: string; role: Role; name: string; home: string }[] = [
+  { email: "customer@roadsathi.demo", password: "customer123", role: "customer", name: "Customer (demo)", home: "/sos" },
+  { email: "mechanic@roadsathi.demo", password: "mechanic123", role: "mechanic", name: "Mechanic (demo)", home: "/mechanic" },
+];
+
 type Mode = "sign-in" | "sign-up";
 
 const FIELDS: Record<Mode, { name: string; label: string; type: string; placeholder: string }[]> = {
@@ -21,7 +29,10 @@ const FIELDS: Record<Mode, { name: string; label: string; type: string; placehol
   ],
 };
 
-/** Demo-only auth: no backend. Any non-empty details create a localStorage session, then /sos. */
+/**
+ * Demo-only auth: no backend. The two DEMO_ACCOUNTS sign in with their role; any other
+ * non-empty details (and every sign-up) create a customer session. Stored in localStorage.
+ */
 export default function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>({});
@@ -30,17 +41,25 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    signIn(values);
+  }
+
+  function signIn(values: Record<string, string>) {
+    setError(null);
     const missing = FIELDS[mode].find((f) => !values[f.name]?.trim());
     if (missing) return setError(`Please enter your ${missing.label.toLowerCase()}.`);
     if (signUp && values.password.length < 6) return setError("Password must be at least 6 characters.");
+    const demo = signUp ? undefined : DEMO_ACCOUNTS.find((a) => a.email === values.id.trim().toLowerCase());
+    if (demo && demo.password !== values.password) return setError("Wrong password for this demo account.");
     const session = {
-      name: values.name?.trim() || values.id.trim(),
+      role: demo?.role ?? ("customer" as Role),
+      name: demo?.name ?? (values.name?.trim() || values.id.trim()),
       contact: values.email?.trim() || values.id?.trim(),
       phone: values.phone?.trim() ?? null,
       at: new Date().toISOString(),
     };
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch { /* storage blocked: still let them in */ }
-    router.push("/sos");
+    router.push(demo?.home ?? "/sos");
   }
 
   return (
@@ -82,6 +101,28 @@ export default function AuthForm({ mode }: { mode: Mode }) {
             {signUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
+
+        {!signUp && (
+          <div className="mt-6 border-t border-edge pt-5">
+            <div className="label text-center">Demo login</div>
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_ACCOUNTS.map((a) => (
+                <button
+                  key={a.role}
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    const demoValues = { id: a.email, password: a.password };
+                    setValues(demoValues);
+                    signIn(demoValues);
+                  }}
+                >
+                  {a.role === "customer" ? "🚗 Customer Demo" : "🔧 Mechanic Demo"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="mt-5 text-center text-sm text-muted">
           {signUp ? "Already have an account? " : "Don't have an account? "}

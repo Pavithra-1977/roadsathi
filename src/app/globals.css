@@ -32,7 +32,11 @@
 }
 .app-light .card,
 .app-light .card-pad { box-shadow: 0 1px 2px rgba(15, 27, 61, 0.05); backdrop-filter: none; }
-.app-light .text-white { color: #0f1b3d; }
+/* Attribute selector, not .text-white: @apply text-white in .btn-* would otherwise copy this navy rule. */
+.app-light [class~="text-white"],
+.app-light [class~="hover:text-white"]:hover,
+.app-light .input,
+.app-light .btn-ghost { color: #0f1b3d; }
 .app-light .btn-sos,
 .app-light .btn-primary,
 .app-light .btn-safe { color: #fff; }
